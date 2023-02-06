@@ -34,7 +34,7 @@ impl FileBlockIterator {
         Ok(decoded)
     }
 
-    fn read_blob_data(blob: osmpbf::Blob) -> Result<Vec<u8>, GenericError> {
+    pub fn read_blob_data(blob: osmpbf::Blob) -> Result<Vec<u8>, GenericError> {
         match blob.data {
             None => {
                 Err(
@@ -91,6 +91,6 @@ impl Iterator for FileBlockIterator {
         self.file.read_exact(&mut blob_buffer).ok()?;
         let blob = osmpbf::Blob::decode(&mut Cursor::new(blob_buffer)).ok()?;
         let data = FileBlockIterator::read_blob_data(blob).unwrap();
-        FileBlock::new(blob_header, data).ok()
+        FileBlock::new(blob_header.r#type.as_str(), data).ok()
     }
 }

@@ -7,6 +7,7 @@ use crate::osm::model::file_info::FileInfo;
 use crate::osm::pbf::element_iterator::ElementIterator;
 use crate::osm::pbf::file_block::FileBlock;
 use crate::osm::pbf::file_block_iterator::FileBlockIterator;
+use crate::osm::pbf::parallel_element_processor::ParallelElementProcessor;
 
 #[derive(Debug, Clone)]
 pub struct Reader {
@@ -54,6 +55,10 @@ impl Reader {
         ElementIterator::new(&self.path).unwrap()
     }
 
+    pub fn parallel_elements(&self, work_buffer_size: Option<usize>, tasks: Option<usize>) -> ParallelElementProcessor {
+        ParallelElementProcessor::new(&self.path, work_buffer_size, tasks).unwrap()
+    }
+
     fn find_missing_features(supported_features: &Vec<String>, required_features: &Vec<String>) -> Vec<String> {
         let supported: HashSet<&String> = supported_features.into_iter().collect::<HashSet<&String>>();
         let required: HashSet<&String> = required_features.into_iter().collect::<HashSet<&String>>();
@@ -84,23 +89,6 @@ impl Reader {
     }
 }
 
-// impl IntoIterator for Reader {
-//     type Item = FileBlock;
-//     type IntoIter = FileBlockIterator;
-//
-//     fn into_iter(self) -> Self::IntoIter {
-//         FileBlockIterator::new(&self.path).unwrap()
-//     }
-// }
-//
-// impl IntoIterator for Reader {
-//     type Item = Element;
-//     type IntoIter = ElementIterator;
-//
-//     fn into_iter(self) -> Self::IntoIter {
-//         ElementIterator::new(self)
-//     }
-// }
 
 #[cfg(test)]
 mod tests {

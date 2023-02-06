@@ -14,8 +14,8 @@ pub enum FileBlock {
 }
 
 impl FileBlock {
-    pub fn new(blob_header: BlobHeader, data: Vec<u8>) -> Result<FileBlock, GenericError> {
-        match blob_header.r#type.as_str() {
+    pub fn new(blob_type: &str, data: Vec<u8>) -> Result<FileBlock, GenericError> {
+        match blob_type {
             "OSMHeader" => {
                 Ok(FileBlock::Header {header: OsmHeader::new(data)?,})}
             "OSMData" => {
@@ -34,6 +34,17 @@ impl FileBlock {
             }
             FileBlock::Data { .. } => {
                 Err(OsmIoError::as_generic(format!("Not an OSMHeader")))
+            }
+        }
+    }
+
+    pub fn as_osm_data(&self) -> Result<&OsmData, GenericError> {
+        match self {
+            FileBlock::Header { header } => {
+                Err(OsmIoError::as_generic(format!("Not an OSMData")))
+            }
+            FileBlock::Data { data } => {
+                Ok(data)
             }
         }
     }

@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::ptr::addr_of_mut;
 use std::vec::IntoIter;
 use crate::error::GenericError;
 use crate::osm::model::element::Element;
