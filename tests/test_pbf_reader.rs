@@ -12,46 +12,43 @@ fn test_pbf_reader() {
     SimpleLogger::new().init().unwrap();
     log::info!("Started OSM PBF reader test");
     common::setup();
-    let test_fixture_path = PathBuf::from("./tests/fixtures/germany-230109.osm.pbf");
+    let test_fixture_path = PathBuf::from("./tests/fixtures/niue-230109.osm.pbf");
 
     let reader = Reader::new(test_fixture_path).unwrap();
-    // let info = reader.info();
-    //
-    // let mut header_blocks = 0;
-    // let mut data_blocks = 0;
-    // for file_block in reader.blocks() {
-    //     match file_block {
-    //         FileBlock::Header { header } => {
-    //             header_blocks.add_assign(1);
-    //         }
-    //         FileBlock::Data { data } => {
-    //             data_blocks.add_assign(1);
-    //         }
-    //     }
-    // }
-    // assert_eq!(header_blocks, 1);
-    // assert!(data_blocks > 1);
-    // println!("headers: {header_blocks}, data blocks: {data_blocks}");
+    let info = reader.info();
+
+    let mut header_blocks = 0;
+    let mut data_blocks = 0;
+    for file_block in reader.blocks().unwrap() {
+        match file_block {
+            FileBlock::Header { metadata: _, header: _ } => {
+                header_blocks.add_assign(1);
+            }
+            FileBlock::Data { metadata: _, data: _ } => {
+                data_blocks.add_assign(1);
+            }
+        }
+    }
+    assert_eq!(header_blocks, 1);
+    assert!(data_blocks > 1);
 
     let mut nodes = 0_i64;
     let mut ways = 0_i64;
     let mut relations = 0_i64;
-    for (i, element) in reader.elements().enumerate() {
-        // println!("{i}: {:?}", element);
+    for (i, element) in reader.elements().unwrap().enumerate() {
         match element {
-            Element::Node { node } => {
-                // println!("{node:?}");
+            Element::Node { node: _ } => {
                 nodes.add_assign(1);
             }
-            Element::Way { way } => {
+            Element::Way { way: _ } => {
                 ways.add_assign(1);
             }
-            Element::Relation { relation } => {
+            Element::Relation { relation: _ } => {
                 relations.add_assign(1);
             }
+            Element::Sentinel => {}
         }
     }
-    println!("nodes: {nodes}, ways: {ways}, relations: {relations}");
 
     log::info!("Finished OSM PBF reader test");
 }

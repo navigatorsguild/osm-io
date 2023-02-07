@@ -1,6 +1,6 @@
 use std::io::Cursor;
 use prost::Message;
-use crate::error::{GenericError, OsmIoError};
+use crate::error::{GenericError};
 use crate::osm::model::bounding_box::BoundingBox;
 use crate::osm::model::file_info::FileInfo;
 use crate::osmpbf;

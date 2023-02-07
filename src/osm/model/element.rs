@@ -12,5 +12,6 @@ pub enum Element {
     },
     Relation {
         relation: Relation,
-    }
+    },
+    Sentinel,
 }

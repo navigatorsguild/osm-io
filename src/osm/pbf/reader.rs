@@ -1,13 +1,11 @@
 use std::collections::HashSet;
-use std::fmt::format;
-use std::fs::read;
 use std::path::PathBuf;
+use rayon::iter::{IterBridge, ParallelBridge};
 use crate::error::{GenericError, OsmIoError};
 use crate::osm::model::file_info::FileInfo;
+use crate::osm::pbf::blob_iterator::BlobIterator;
 use crate::osm::pbf::element_iterator::ElementIterator;
-use crate::osm::pbf::file_block::FileBlock;
 use crate::osm::pbf::file_block_iterator::FileBlockIterator;
-use crate::osm::pbf::parallel_element_processor::ParallelElementProcessor;
 
 #[derive(Debug, Clone)]
 pub struct Reader {
@@ -29,7 +27,7 @@ impl Reader {
             path: path.clone(),
             info: Default::default(),
         };
-        let mut block_iterator = reader.clone().blocks();
+        let mut block_iterator = reader.clone().blocks()?;
         let file_block = block_iterator.next().ok_or(
             OsmIoError::as_generic(format!("Failed to parse file header"))
         )?;
@@ -47,16 +45,47 @@ impl Reader {
         )
     }
 
-    pub fn blocks(&self) -> FileBlockIterator {
-        FileBlockIterator::new(&self.path).unwrap()
+    pub fn blobs(&self) -> Result<BlobIterator, GenericError> {
+        BlobIterator::new(self.path.clone())
     }
 
-    pub fn elements(&self) -> ElementIterator {
-        ElementIterator::new(&self.path).unwrap()
+    pub fn parallel_blobs(&self) -> Result<IterBridge<BlobIterator>, GenericError> {
+        match BlobIterator::new(self.path.clone()) {
+            Ok(mut iterator) => {
+                // skip the header. doesn't make sense to include the header in parallel iteration
+                iterator.next();
+                Ok(iterator.par_bridge())
+            }
+            Err(e) => {
+                Err(e)
+            }
+        }
     }
 
-    pub fn parallel_elements(&self, work_buffer_size: Option<usize>, tasks: Option<usize>) -> ParallelElementProcessor {
-        ParallelElementProcessor::new(&self.path, work_buffer_size, tasks).unwrap()
+    pub fn blocks(&self) -> Result<FileBlockIterator, GenericError> {
+        match self.blobs() {
+            Ok(blob_iterator) => {
+                Ok(
+                   FileBlockIterator::new(blob_iterator)
+                )
+            }
+            Err(e) => {
+                Err(e)
+            }
+        }
+    }
+
+    pub fn elements(&self) -> Result<ElementIterator, GenericError> {
+        match self.blocks() {
+            Ok(file_block_iterator) => {
+                Ok(
+                   ElementIterator::new(file_block_iterator)
+                )
+            }
+            Err(e) => {
+                Err(e)
+            }
+        }
     }
 
     fn find_missing_features(supported_features: &Vec<String>, required_features: &Vec<String>) -> Vec<String> {
@@ -113,5 +142,3 @@ mod tests {
         assert!(missing.is_empty());
     }
 }
-
-

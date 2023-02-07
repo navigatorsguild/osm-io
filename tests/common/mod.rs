@@ -6,7 +6,6 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use reqwest;
 use reqwest::Url;
-use simple_logger::SimpleLogger;
 
 
 pub fn setup() {
