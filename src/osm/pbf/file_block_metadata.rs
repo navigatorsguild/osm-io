@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Default, Clone)]
 pub struct FileBlockMetadata {
     t: String,
     index: usize,

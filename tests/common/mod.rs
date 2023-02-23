@@ -11,6 +11,8 @@ use reqwest::Url;
 pub fn setup() {
     let fixture_link = Url::from_str("http://download.geofabrik.de/australia-oceania/niue-latest.osm.pbf").unwrap();
     let fixture_dir_path = PathBuf::from_str("./tests/fixtures/").unwrap();
+    let results_dir_path = PathBuf::from_str("./tests/results/").unwrap();
+    let parallel_results_dir_path = PathBuf::from_str("./tests/parallel-results/").unwrap();
     let fixture_file_path = fixture_dir_path.join("test.osm.pbf");
     if !fixture_file_path.exists() {
         println!("Downloading fixture file: {} -> {:?}", fixture_link, fixture_file_path);
@@ -33,5 +35,21 @@ pub fn setup() {
         );
     } else {
         println!("Fixture file exists at {:?}, skipping download", fixture_file_path);
+    }
+
+    if !results_dir_path.exists() {
+        fs::create_dir_all(&results_dir_path).expect(
+            format!("Failed to create results directory: {:?}", results_dir_path).as_str()
+        );
+    } else {
+        println!("Results directory exists at {:?}", results_dir_path);
+    }
+
+    if !parallel_results_dir_path.exists() {
+        fs::create_dir_all(&parallel_results_dir_path).expect(
+            format!("Failed to create parallel results directory: {:?}", parallel_results_dir_path).as_str()
+        );
+    } else {
+        println!("Results directory exists at {:?}", parallel_results_dir_path);
     }
 }

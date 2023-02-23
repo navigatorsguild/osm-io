@@ -4,15 +4,27 @@ use osm_io::osm::model::element::Element;
 use osm_io::osm::pbf;
 use osm_io::reporting::stopwatch::StopWatch;
 use rayon::iter::ParallelIterator;
+use osm_io::osm::pbf::compression_type::CompressionType;
 use osm_io::osm::pbf::file_block::FileBlock;
 
 pub fn main() {
     SimpleLogger::new().init().unwrap();
     log::info!("Started OSM PBF rwpipe");
-    let input_path = PathBuf::from("./tests/fixtures/germany-230109.osm.pbf");
+    let input_path = PathBuf::from("./tests/fixtures/niue-230109.osm.pbf");
     let output_path = PathBuf::from("/tmp/b.osm.pbf");
     let reader = pbf::reader::Reader::new(input_path.clone()).unwrap();
-    let _writer = pbf::writer::Writer::new(output_path.clone()).unwrap();
+    let _writer = pbf::writer::Writer::new(
+        output_path.clone(),
+        "rwpip-test-writer",
+        "from fixture",
+        None,
+        None,
+        None,
+        CompressionType::Uncompressed,
+        true,
+        None,
+        true,
+    ).unwrap();
 
     let mut stopwatch = StopWatch::new();
 
@@ -60,13 +72,16 @@ pub fn main() {
     log::info!("start parallel iteration over elements for {:?}", input_path);
     stopwatch.restart();
     reader.parallel_blobs().unwrap().for_each(
-        |blob| {
-            for _element in FileBlock::from_blob(&blob).unwrap().elements() {
+        |blob_desc| {
+            println!("working on {}", blob_desc.index());
+            for _element in FileBlock::from_blob_desc(&blob_desc).unwrap().elements() {
 
             }
         }
     );
     log::info!("finish parallel iteration over elements for {:?}, time: {}", input_path, stopwatch);
+
+
 
     log::info!("Finished OSM PBF rwpipe");
 }

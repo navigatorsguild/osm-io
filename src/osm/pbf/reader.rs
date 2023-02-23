@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::path::PathBuf;
 use rayon::iter::{IterBridge, ParallelBridge};
 use crate::error::{GenericError, OsmIoError};
-use crate::osm::model::file_info::FileInfo;
+use crate::osm::pbf::file_info::FileInfo;
 use crate::osm::pbf::blob_iterator::BlobIterator;
 use crate::osm::pbf::element_iterator::ElementIterator;
 use crate::osm::pbf::file_block_iterator::FileBlockIterator;
@@ -20,6 +20,7 @@ impl Reader {
             "OsmSchema-V0.6".to_string(),
             "DenseNodes".to_string(),
             "HistoricalInformation".to_string(),
+            "Sort.Type_then_ID".to_string(),
         ];
 
         let mut reader = Reader {

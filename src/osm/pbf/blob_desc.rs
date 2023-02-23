@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 #[derive(Debug)]
-pub struct Blob {
+pub struct BlobDesc {
     path: PathBuf,
     index: usize,
     start: u64,
@@ -9,9 +9,9 @@ pub struct Blob {
     t: String,
 }
 
-impl Blob {
-    pub(crate) fn new(path: PathBuf, index: usize, start: u64, length: u64, t: String) -> Blob {
-        Blob {
+impl BlobDesc {
+    pub(crate) fn new(path: PathBuf, index: usize, start: u64, length: u64, t: String) -> BlobDesc {
+        BlobDesc {
             path,
             index,
             start,

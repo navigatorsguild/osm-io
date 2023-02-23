@@ -21,10 +21,10 @@ fn test_pbf_reader() {
     let mut data_blocks = 0;
     for file_block in reader.blocks().unwrap() {
         match file_block {
-            FileBlock::Header { metadata: _, header: _ } => {
+            FileBlock::Header { metadata, header } => {
                 header_blocks.add_assign(1);
             }
-            FileBlock::Data { metadata: _, data: _ } => {
+            FileBlock::Data { metadata, data } => {
                 data_blocks.add_assign(1);
             }
         }
@@ -37,13 +37,13 @@ fn test_pbf_reader() {
     let mut relations = 0_i64;
     for (i, element) in reader.elements().unwrap().enumerate() {
         match element {
-            Element::Node { node: _ } => {
+            Element::Node { node } => {
                 nodes.add_assign(1);
             }
-            Element::Way { way: _ } => {
+            Element::Way { way } => {
                 ways.add_assign(1);
             }
-            Element::Relation { relation: _ } => {
+            Element::Relation { relation } => {
                 relations.add_assign(1);
             }
             Element::Sentinel => {}

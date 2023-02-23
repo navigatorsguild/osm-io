@@ -13,6 +13,13 @@ impl MemberData {
             role,
         }
     }
+    pub fn id(&self) -> i64 {
+        self.id
+    }
+
+    pub fn role(&self) -> &String {
+        &self.role
+    }
 }
 
 #[derive(Debug)]
@@ -25,13 +32,14 @@ pub enum Member {
     },
     Relation {
         member: MemberData,
-    }
+    },
 }
 
 
 #[derive(Debug)]
 pub struct Relation {
-   id: i64,
+    id: i64,
+    version: i32,
     timestamp: i64,
     changeset: i64,
     uid: i32,
@@ -42,20 +50,53 @@ pub struct Relation {
 }
 
 impl Relation {
-    pub fn new(id: i64, timestamp: i64, changeset: i64, uid: i32, user: String, visible: bool, members: Vec<Member>, tags: Vec<Tag>) -> Relation {
-       Relation {
-           id,
-           timestamp,
-           changeset,
-           uid,
-           user,
-           visible,
-           members,
-           tags,
-       }
+    pub fn new(id: i64, version: i32, timestamp: i64, changeset: i64, uid: i32, user: String, visible: bool, members: Vec<Member>, tags: Vec<Tag>) -> Relation {
+        Relation {
+            id,
+            version,
+            timestamp,
+            changeset,
+            uid,
+            user,
+            visible,
+            members,
+            tags,
+        }
     }
 
     pub fn id(&self) -> i64 {
         self.id
+    }
+
+    pub fn version(&self) -> i32 {
+        self.version
+    }
+
+    pub fn timestamp(&self) -> i64 {
+        self.timestamp
+    }
+
+    pub fn changeset(&self) -> i64 {
+        self.changeset
+    }
+
+    pub fn uid(&self) -> i32 {
+        self.uid
+    }
+
+    pub fn user(&self) -> &String {
+        &self.user
+    }
+
+    pub fn visible(&self) -> bool {
+        self.visible
+    }
+
+    pub fn members(&self) -> &Vec<Member> {
+        &self.members
+    }
+
+    pub fn tags(&self) -> &Vec<Tag> {
+        &self.tags
     }
 }
