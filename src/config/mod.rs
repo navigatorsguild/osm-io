@@ -7,7 +7,6 @@ pub struct Config {
     pub output: PathBuf,
     pub output_format: String,
     pub file_info: FileInfo,
-    pub compute_bounding_box: bool,
 }
 
 impl Config {
@@ -16,7 +15,6 @@ impl Config {
                output: PathBuf,
                output_format: String,
                file_info: FileInfo,
-               compute_bounding_box: bool,
     ) -> Config {
         Config {
             input,
@@ -24,7 +22,6 @@ impl Config {
             output,
             output_format,
             file_info,
-            compute_bounding_box,
         }
     }
 }

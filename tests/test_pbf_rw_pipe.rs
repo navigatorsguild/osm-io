@@ -14,8 +14,8 @@ mod common;
 fn test_pbf_rw_pipe() {
     SimpleLogger::new().init().unwrap();
     common::setup();
-    let test_fixture_path = PathBuf::from("./tests/fixtures/germany-230109.osm.pbf");
-    let test_output_path = PathBuf::from("./tests/results/germany-230109.osm.pbf");
+    let test_fixture_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
+    let test_output_path = PathBuf::from("./tests/results/malta-230109.osm.pbf");
 
 
     let mut stopwatch = StopWatch::new();
@@ -31,7 +31,6 @@ fn test_pbf_rw_pipe() {
         test_output_path,
         info,
         CompressionType::Zlib,
-        true,
     ).unwrap();
 
     writer.write_header().unwrap();
@@ -41,7 +40,6 @@ fn test_pbf_rw_pipe() {
     while let Some(file_block) = block_iterator.next() {
         writer.write(file_block).expect("failed to write a file block");
     }
-    writer.rewrite_header().unwrap();
 
     log::info!("Finished OSM PBF rw pipe test, time: {stopwatch}");
 }

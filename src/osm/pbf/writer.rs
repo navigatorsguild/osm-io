@@ -21,7 +21,6 @@ pub struct Writer {
     file_info: FileInfo,
     compression_type: CompressionType,
     file: File,
-    compute_bounding_box: bool,
 }
 
 // TODO: create with a builder or add a configuration parameter or get a Fileinfo as paramter
@@ -30,7 +29,6 @@ impl Writer {
         path: PathBuf,
         file_info: FileInfo,
         compression_type: CompressionType,
-        compute_bounding_box: bool,
     ) -> Result<Writer, GenericError> {
         let file = File::create(path.clone())?;
 
@@ -40,7 +38,6 @@ impl Writer {
                 file_info,
                 compression_type,
                 file,
-                compute_bounding_box,
             }
         )
     }
@@ -53,7 +50,6 @@ impl Writer {
         osmosis_replication_sequence_number: Option<i64>,
         osmosis_replication_base_url: Option<String>,
         compression_type: CompressionType,
-        compute_bounding_box: bool,
         precomputed_bounding_box: Option<BoundingBox>,
         contains_history: bool,
     ) -> Result<Writer, GenericError> {
@@ -85,36 +81,34 @@ impl Writer {
             osmosis_replication_base_url,
         );
 
-        Self::from_file_info(path, file_info, compression_type, compute_bounding_box)
+        Self::from_file_info(path, file_info, compression_type)
     }
 
     pub fn write_header(&mut self) -> Result<(), GenericError> {
         let file_block = FileBlock::from_header(
             OsmHeader::from_file_info(self.file_info.clone())
         );
+        // println!("in writer: {:?}", self.file_info);
 
         self.write(file_block)
     }
 
-    pub fn rewrite_header(&mut self) -> Result<(), GenericError> {
-        self.file.rewind()?;
-        self.write_header()
-    }
-
     pub fn write(&mut self, file_block: FileBlock) -> Result<(), GenericError> {
-        if self.compute_bounding_box {
-            self.file_info.merge_bounding_box(file_block.compute_bounding_box());
-        }
         let (blob_header, blob_body) = FileBlock::serialize(&file_block, self.compression_type.clone())?;
         self.write_blob(blob_header, blob_body)
     }
 
     pub fn write_blob(&mut self, blob_header: Vec<u8>, blob_body: Vec<u8>) -> Result<(), GenericError> {
+        // println!("header: {}, body: {}", blob_header.len(), blob_body.len());
         let blob_header_len: i32 = blob_header.len() as i32;
         self.file.write(&blob_header_len.to_be_bytes())?;
         self.file.write(&blob_header)?;
         self.file.write(&blob_body)?;
         self.file.flush()?;
         Ok(())
+    }
+
+    pub fn add_bounding_box(&mut self, bounding_box: Option<BoundingBox>) {
+        self.file_info.merge_bounding_box(bounding_box);
     }
 }

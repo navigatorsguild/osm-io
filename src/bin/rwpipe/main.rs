@@ -21,7 +21,6 @@ pub fn main() {
         None,
         None,
         CompressionType::Uncompressed,
-        true,
         None,
         true,
     ).unwrap();

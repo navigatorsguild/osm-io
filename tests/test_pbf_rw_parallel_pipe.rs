@@ -1,7 +1,7 @@
 use std::borrow::{Borrow, BorrowMut};
 use std::collections::HashMap;
 use std::fs::File;
-use std::ops::{Deref, DerefMut};
+use std::ops::{AddAssign, Deref, DerefMut};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, RwLock, TryLockResult};
 use std::sync::atomic::Ordering;
@@ -25,8 +25,10 @@ use osm_io::reporting::stopwatch::StopWatch;
 mod common;
 
 use std::cell::{Ref, RefCell};
+use std::env::Args;
 use std::time::Duration;
 use bytes::Buf;
+use osm_io::osm::model::bounding_box::BoundingBox;
 use osm_io::osm::pbf::writer::Writer;
 
 thread_local! {
@@ -34,6 +36,7 @@ thread_local! {
     // the first expected block is #1. #0 is the header
     pub static LAST_WRITTEN: RefCell<usize> = RefCell::new(0);
     pub static PBF_WRITER: RefCell<Option<Writer>> = RefCell::new(None);
+    pub static NEXT_THREAD_POOL: RefCell<Option<Arc<RwLock<ThreadPool>>>> = RefCell::new(None);
 }
 
 struct DecodeBlobCommand {
@@ -91,13 +94,18 @@ impl EncodeBlobCommand {
 
 impl Command for EncodeBlobCommand {
     fn execute(&self) -> Result<(), GenericError> {
+        let mut bounding_box = None;
         let (header, body) = FileBlock::serialize(&self.file_block, CompressionType::Zlib).unwrap();
         let ws = self.work_stages.read().unwrap();
-        let pbo = ws.get("pbf-block-ordering").unwrap().read().unwrap();
-        pbo.submit(
+        let pbw = ws.get("pbf-block-writer").unwrap().read().unwrap();
+        let mut metadata = self.file_block.metadata().clone();
+        if bounding_box.is_some() {
+            metadata.set_bounding_box(bounding_box.unwrap())
+        }
+        pbw.submit(
             Box::new(
-                OrderBlobsCommand::new(
-                    Mutex::new(self.file_block.metadata().clone()),
+                WriteBlobsCommand::new(
+                    Mutex::new(metadata),
                     Mutex::new(header),
                     Mutex::new(body),
                     self.work_stages.clone(),
@@ -109,7 +117,7 @@ impl Command for EncodeBlobCommand {
     }
 }
 
-struct OrderBlobsCommand {
+struct WriteBlobsCommand {
     metadata: Mutex<FileBlockMetadata>,
     header: Mutex<Vec<u8>>,
     body: Mutex<Vec<u8>>,
@@ -117,15 +125,15 @@ struct OrderBlobsCommand {
     config: Arc<RwLock<Config>>,
 }
 
-impl OrderBlobsCommand {
+impl WriteBlobsCommand {
     pub fn new(
         metadata: Mutex<FileBlockMetadata>,
         header: Mutex<Vec<u8>>,
         body: Mutex<Vec<u8>>,
         work_stages: Arc<RwLock<HashMap::<String, Arc<RwLock<ThreadPool>>>>>,
         config: Arc<RwLock<Config>>,
-    ) -> OrderBlobsCommand {
-        OrderBlobsCommand {
+    ) -> WriteBlobsCommand {
+        WriteBlobsCommand {
             metadata,
             header,
             work_stages,
@@ -136,7 +144,7 @@ impl OrderBlobsCommand {
 }
 
 
-impl Command for OrderBlobsCommand {
+impl Command for WriteBlobsCommand {
     fn execute(&self) -> Result<(), GenericError> {
         ORDERING_BUFFER.with(
             |buffer| {
@@ -167,7 +175,6 @@ impl Command for OrderBlobsCommand {
                         config.output.clone(),
                         config.file_info.clone(),
                         CompressionType::Zlib,
-                        true,
                     ).expect("Failed to create a writer");
                     w.write_header().expect("Failed to write header");
                     writer.replace(Some(w));
@@ -189,6 +196,7 @@ impl Command for OrderBlobsCommand {
                                 PBF_WRITER.with(
                                     |writer| {
                                         let mut w = writer.replace(None);
+                                        w.as_mut().unwrap().add_bounding_box(metadata.bounding_box());
                                         w.as_mut().unwrap().write_blob(header, body).expect("Failed to write a blob");
                                         writer.replace(w);
                                     }
@@ -204,13 +212,35 @@ impl Command for OrderBlobsCommand {
     }
 }
 
+// struct InitThreadLocalCommand {
+//     f: Arc<Mutex<dyn FnMut() + Send + Sync>>,
+// }
+//
+// impl InitThreadLocalCommand {
+//     pub fn new(f: Arc<Mutex<dyn FnMut() + Send + Sync>>) -> InitThreadLocalCommand {
+//         InitThreadLocalCommand {
+//             f
+//         }
+//     }
+// }
+//
+// impl Command for InitThreadLocalCommand {
+//     fn execute(&self) -> Result<(), GenericError> {
+//         let mut f = self.f.lock().unwrap();
+//         f();
+//         println!("running in thread");
+//         Ok(())
+//     }
+// }
+
+
 #[test]
 fn test_pbf_rw_parallel_pipe() {
     SimpleLogger::new().init().unwrap();
     common::setup();
     log::info!("Started OSM PBF rw parallel pipe test");
-    let input_path = PathBuf::from("./tests/fixtures/germany-230109.osm.pbf");
-    let output_path = PathBuf::from("./tests/parallel-results/germany-230109.osm.pbf");
+    let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
+    let output_path = PathBuf::from("./tests/parallel-results/malta-230109.osm.pbf");
 
 
     let reader = pbf::reader::Reader::new(input_path.clone()).unwrap();
@@ -226,7 +256,6 @@ fn test_pbf_rw_parallel_pipe() {
                 output_path.clone(),
                 "pbf".to_string(),
                 info.clone(),
-                true,
             )
         )
     );
@@ -247,6 +276,7 @@ fn test_pbf_rw_parallel_pipe() {
         )
     );
 
+
     let pbf_block_encoder_pool = Arc::new(
         RwLock::new(
             ThreadPoolBuilder::new()
@@ -259,12 +289,40 @@ fn test_pbf_rw_parallel_pipe() {
         )
     );
 
-    let pbf_block_ordering_pool = Arc::new(
+
+    ////////////////
+    // {
+    //     let pbf_block_encoder_pool_clone = pbf_block_encoder_pool.clone();
+    //     let pbd = pbf_block_decoder_pool.read().unwrap();
+    //     let f = Arc::new(
+    //         Mutex::new(
+    //             move || {
+    //                 NEXT_THREAD_POOL.with(
+    //                     |next| {
+    //                         println!("@@@@@@@@@@ {:?}", thread::current().name());
+    //                         next.replace(Some(pbf_block_encoder_pool_clone.clone()));
+    //                     }
+    //                 );
+    //             }
+    //         )
+    //     );
+    //     pbd.submit(
+    //         Box::new(
+    //             InitThreadLocalCommand::new(
+    //                 f.clone()
+    //             )
+    //         )
+    //     );
+    // }
+    //////////////
+
+
+    let pbf_block_writer_pool = Arc::new(
         RwLock::new(
             ThreadPoolBuilder::new()
                 .tasks(1)
                 .queue_size(1024)
-                .name("pbf-block-ordering".to_string())
+                .name("pbf-block-writer".to_string())
                 .shutdown_mode(ShutdownMode::CompletePending)
                 .build()
                 .unwrap()
@@ -276,20 +334,22 @@ fn test_pbf_rw_parallel_pipe() {
         let mut ws = work_stages.write().unwrap();
         ws.insert("pbf-block-decoder".to_string(), pbf_block_decoder_pool);
         ws.insert("pbf-block-encoder".to_string(), pbf_block_encoder_pool);
-        ws.insert("pbf-block-ordering".to_string(), pbf_block_ordering_pool);
+        ws.insert("pbf-block-writer".to_string(), pbf_block_writer_pool);
     }
 
+    let mut i = 0_usize;
     for blob in reader.blobs().unwrap() {
         let ws = work_stages.read().unwrap();
         let pbd = ws.get("pbf-block-decoder").unwrap().read().unwrap();
         pbd.submit(Box::new(DecodeBlobCommand::new(blob, work_stages.clone(), config.clone())));
+        i.add_assign(1);
     }
 
     log::info!("Finished submitting blobs");
 
     shutdown_work_stage(&work_stages, "pbf-block-decoder");
     shutdown_work_stage(&work_stages, "pbf-block-encoder");
-    shutdown_work_stage(&work_stages, "pbf-block-ordering");
+    shutdown_work_stage(&work_stages, "pbf-block-writer");
     log::info!("Finished OSM PBF rw parallel pipe test, time: {stopwatch}");
 }
 

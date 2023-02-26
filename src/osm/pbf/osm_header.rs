@@ -93,9 +93,6 @@ impl OsmHeader {
 
         let mut buf = Vec::<u8>::with_capacity(512);
         header_block.encode(&mut buf)?;
-        while buf.len() < 512 {
-            buf.push(32_u8);
-        }
         Ok(buf)
     }
 
