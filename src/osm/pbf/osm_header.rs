@@ -1,4 +1,3 @@
-use std::fs::File;
 use std::io::Cursor;
 use prost::Message;
 use crate::error::{GenericError};
@@ -60,19 +59,18 @@ impl OsmHeader {
         }
     }
 
-
     fn to_header_bbox(&self) -> Option<osmpbf::HeaderBBox> {
-        match &self.info.bounding_box {
+        match &self.info.bounding_box() {
             None => {
                 None
             }
             Some(bounding_box) => {
                 Some(
                     osmpbf::HeaderBBox {
-                        left: (bounding_box.left * NANODEG) as i64,
-                        right: (bounding_box.right * NANODEG) as i64,
-                        top: (bounding_box.top * NANODEG) as i64,
-                        bottom: (bounding_box.bottom * NANODEG) as i64,
+                        left: (bounding_box.left() * NANODEG) as i64,
+                        right: (bounding_box.right() * NANODEG) as i64,
+                        top: (bounding_box.top() * NANODEG) as i64,
+                        bottom: (bounding_box.bottom() * NANODEG) as i64,
                     }
                 )
             }
@@ -82,13 +80,13 @@ impl OsmHeader {
     pub fn serialize(&self) -> Result<Vec<u8>, GenericError> {
         let header_block = osmpbf::HeaderBlock {
             bbox: self.to_header_bbox(),
-            required_features: self.info.required_features.clone(),
-            optional_features: self.info.optional_features.clone(),
-            writingprogram: self.info.writingprogram.clone(),
-            source: self.info.source.clone(),
-            osmosis_replication_timestamp: self.info.osmosis_replication_timestamp.clone(),
-            osmosis_replication_sequence_number: self.info.osmosis_replication_sequence_number.clone(),
-            osmosis_replication_base_url: self.info.osmosis_replication_base_url.clone(),
+            required_features: self.info.required_features().clone(),
+            optional_features: self.info.optional_features().clone(),
+            writingprogram: self.info.writingprogram().clone(),
+            source: self.info.source().clone(),
+            osmosis_replication_timestamp: self.info.osmosis_replication_timestamp().clone(),
+            osmosis_replication_sequence_number: self.info.osmosis_replication_sequence_number().clone(),
+            osmosis_replication_base_url: self.info.osmosis_replication_base_url().clone(),
         };
 
         let mut buf = Vec::<u8>::with_capacity(512);

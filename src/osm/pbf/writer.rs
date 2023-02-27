@@ -1,20 +1,12 @@
 use std::fs::File;
-use std::io::{BufWriter, Seek, Write};
+use std::io::{Write};
 use std::path::PathBuf;
-use std::process::Output;
-use std::ptr::write;
-use chrono::{DateTime, NaiveDate, NaiveDateTime};
-use prost::Message;
 use crate::error::GenericError;
 use crate::osm::model::bounding_box::BoundingBox;
-use crate::osm::model::element::Element;
 use crate::osm::pbf::compression_type::CompressionType;
 use crate::osm::pbf::file_block::FileBlock;
 use crate::osm::pbf::file_info::FileInfo;
 use crate::osm::pbf::osm_header::OsmHeader;
-use crate::osmpbf;
-use crate::osmpbf::{Blob, BlobHeader, HeaderBBox, HeaderBlock};
-use crate::osmpbf::blob::Data;
 
 pub struct Writer {
     path: PathBuf,
@@ -88,7 +80,6 @@ impl Writer {
         let file_block = FileBlock::from_header(
             OsmHeader::from_file_info(self.file_info.clone())
         );
-        // println!("in writer: {:?}", self.file_info);
 
         self.write(file_block)
     }
@@ -99,7 +90,6 @@ impl Writer {
     }
 
     pub fn write_blob(&mut self, blob_header: Vec<u8>, blob_body: Vec<u8>) -> Result<(), GenericError> {
-        // println!("header: {}, body: {}", blob_header.len(), blob_body.len());
         let blob_header_len: i32 = blob_header.len() as i32;
         self.file.write(&blob_header_len.to_be_bytes())?;
         self.file.write(&blob_header)?;
@@ -110,5 +100,9 @@ impl Writer {
 
     pub fn add_bounding_box(&mut self, bounding_box: Option<BoundingBox>) {
         self.file_info.merge_bounding_box(bounding_box);
+    }
+
+    pub fn path(&self) -> &PathBuf {
+        &self.path
     }
 }

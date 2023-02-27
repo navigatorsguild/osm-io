@@ -11,11 +11,10 @@ use crate::osm::model::element::Element;
 use crate::osm::pbf::blob_desc::BlobDesc;
 use crate::osm::pbf::compression_type::CompressionType;
 use crate::osm::pbf::file_block_metadata::FileBlockMetadata;
-use crate::osm::pbf::file_info::FileInfo;
 use crate::osm::pbf::osm_data::OsmData;
 use crate::osm::pbf::osm_header::OsmHeader;
 use crate::osmpbf::blob::Data;
-use crate::osmpbf::{Blob, BlobHeader, HeaderBBox, HeaderBlock};
+use crate::osmpbf::{Blob, BlobHeader};
 
 #[derive(Debug)]
 pub enum FileBlock {
@@ -58,10 +57,10 @@ impl FileBlock {
 
     pub fn compute_bounding_box(&self) -> Option<BoundingBox> {
         match self {
-            FileBlock::Header { metadata, header } => {
-                header.info().bounding_box.clone()
+            FileBlock::Header { metadata: _, header } => {
+                header.info().bounding_box().clone()
             }
-            FileBlock::Data { metadata, data } => {
+            FileBlock::Data { metadata: _, data } => {
                 data.compute_bounding_box()
             }
         }
@@ -151,10 +150,10 @@ impl FileBlock {
 
     pub fn serialize(file_block: &FileBlock, compression: CompressionType) -> Result<(Vec<u8>, Vec<u8>), GenericError> {
         let (blob_type, compression_level, block_data) = match file_block {
-            FileBlock::Header { metadata, header } => {
+            FileBlock::Header { metadata: _, header } => {
                 ("OSMHeader".to_string(), Compression::none(), header.serialize().unwrap())
             }
-            FileBlock::Data { metadata, data } => {
+            FileBlock::Data { metadata: _, data } => {
                 ("OSMData".to_string(), Compression::default(), data.serialize().unwrap())
             }
         };
@@ -194,7 +193,7 @@ impl FileBlock {
         Ok((header, body))
     }
 
-    fn deserialize(blob_desc: &BlobDesc, mut blob_buffer: &mut Vec<u8>) -> Result<FileBlock, GenericError> {
+    fn deserialize(blob_desc: &BlobDesc, blob_buffer: &mut Vec<u8>) -> Result<FileBlock, GenericError> {
         // use BlobDesc rather than BlobHeader to skip reading again the blob header
         let protobuf_blob = osmpbf::Blob::decode(&mut Cursor::new(blob_buffer)).expect(
             format!("Failed to decode a message from blob {} from {:?}", blob_desc.index(), blob_desc.path()).as_str()
@@ -205,10 +204,10 @@ impl FileBlock {
 
     pub fn metadata(&self) -> &FileBlockMetadata {
         match self {
-            FileBlock::Header { metadata, header } => {
+            FileBlock::Header { metadata, header: _ } => {
                 metadata
             }
-            FileBlock::Data { metadata, data } => {
+            FileBlock::Data { metadata, data: _ } => {
                 metadata
             }
         }

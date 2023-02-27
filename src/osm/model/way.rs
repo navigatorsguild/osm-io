@@ -61,6 +61,7 @@ impl Way {
     pub fn refs(&self) -> &Vec<i64> {
         &self.refs
     }
+
     pub fn tags(&self) -> &Vec<Tag> {
         &self.tags
     }

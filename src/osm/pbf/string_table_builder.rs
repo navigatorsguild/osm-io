@@ -17,7 +17,7 @@ impl StringTableBuilder {
     }
 
     pub(crate) fn add(&mut self, s: &String) -> i32 {
-        let mut string_index: i32;
+        let string_index: i32;
         if self.index.contains_key(s.as_str()) {
             string_index = *self.index.get(s).unwrap()
         } else {

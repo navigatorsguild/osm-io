@@ -1,7 +1,7 @@
 #[derive(Debug)]
 pub struct Coordinate {
-    pub lat: f64,
-    pub lon: f64,
+    lat: f64,
+    lon: f64,
 }
 
 impl Coordinate {
@@ -10,5 +10,13 @@ impl Coordinate {
             lat,
             lon,
         }
+    }
+
+    pub fn lat(&self) -> f64 {
+        self.lat
+    }
+
+    pub fn lon(&self) -> f64 {
+        self.lon
     }
 }

@@ -31,12 +31,10 @@ impl Iterator for BlobIterator {
     type Item = osm::pbf::blob_desc::BlobDesc;
 
     fn next(&mut self) -> Option<Self::Item> {
-        // println!("@@@@@@@@@@@@ BlobIterator::next 1 @@@@@@@@@@@@@@@@@@@@");
         self.file.seek(SeekFrom::Current(self.jump as i64)).ok()?;
         let mut header_len_buffer = [0_u8; 4];
         self.file.read_exact(&mut header_len_buffer).ok()?;
         let blob_header_len = i32::from_be_bytes(header_len_buffer);
-        // println!("@@@@@@@@@@@@ BlobIterator::next 2 {blob_header_len} @@@@@@@@@@@@@@@@@@@@");
         let mut blob_header_buffer = vec![0; blob_header_len as usize];
         self.file.read_exact(&mut blob_header_buffer).ok()?;
         let blob_header = osmpbf::BlobHeader::decode(&mut Cursor::new(blob_header_buffer)).ok()?;

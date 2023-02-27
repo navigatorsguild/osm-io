@@ -1,7 +1,7 @@
 #[derive(Debug)]
 pub struct Tag {
-    pub k: String,
-    pub v: String,
+    k: String,
+    v: String,
 }
 
 impl Tag{
@@ -10,5 +10,13 @@ impl Tag{
             k,
             v,
         }
+    }
+
+    pub fn k(&self) -> &String {
+        &self.k
+    }
+
+    pub fn v(&self) -> &String {
+        &self.v
     }
 }

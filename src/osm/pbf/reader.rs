@@ -37,7 +37,7 @@ impl Reader {
 
         Self::verify_supported_features(
             &reader.supported_features,
-            &reader.info().required_features,
+            &reader.info().required_features(),
         )?;
 
 

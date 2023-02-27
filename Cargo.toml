@@ -13,6 +13,7 @@ flate2 = "1.0"
 thiserror = "1.0"
 rayon = "1.6"
 chrono = "0.4"
+json = "0.12"
 command-executor = { path = "../command-executor" }
 
 

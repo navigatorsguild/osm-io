@@ -10,7 +10,6 @@ pub mod file_block;
 pub mod file_block_metadata;
 pub mod file_info;
 pub mod compression_type;
-pub mod file_block_compactor;
 pub(crate) mod dense_group_builder;
 pub(crate) mod string_table_builder;
 pub(crate) mod ways_group_builder;

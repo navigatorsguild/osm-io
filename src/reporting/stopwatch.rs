@@ -57,10 +57,10 @@ impl Display for StopWatch {
 
 #[cfg(test)]
 mod tests {
-    use std::thread;
-    use std::time::Duration;
-
-    use super::*;
+    // use std::thread;
+    // use std::time::Duration;
+    //
+    // use super::*;
 
     #[test]
     fn test_stopwatch() {

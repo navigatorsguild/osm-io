@@ -27,20 +27,20 @@ impl DenseGroupBuilder {
         string_table_builder: &mut StringTableBuilder,
     ) -> DenseGroupBuilder {
         let mut dense = Some(DenseNodes::default());
-        let mut last_id= 0_i64;
-        let mut last_lon = 0_i64;
-        let mut last_lat = 0_i64;
-        let mut last_timestamp = 0_i64;
-        let mut last_uid = 0_i32;
-        let mut last_changeset = 0_i64;
-        let mut last_sid = 0_i32;
+        let last_id;
+        let last_lon;
+        let last_lat;
+        let last_timestamp;
+        let last_uid;
+        let last_changeset;
+        let last_sid;
 
         last_id = node.id();
         dense.as_mut().unwrap().id.push(last_id);
 
-        last_lon = (node.coordinate().lon * 1000000000 as f64  / granularity as f64 - lon_offset as f64) as i64;
+        last_lon = (node.coordinate().lon() * 1000000000 as f64  / granularity as f64 - lon_offset as f64) as i64;
         dense.as_mut().unwrap().lon.push(last_lon);
-        last_lat = (node.coordinate().lat * 1000000000  as f64 / granularity  as f64 - lat_offset as f64) as i64;
+        last_lat = (node.coordinate().lat() * 1000000000  as f64 / granularity  as f64 - lat_offset as f64) as i64;
         dense.as_mut().unwrap().lat.push(last_lat);
 
         dense.as_mut().unwrap().denseinfo = Some(DenseInfo::default());
@@ -56,8 +56,6 @@ impl DenseGroupBuilder {
 
         last_changeset = node.changeset();
         dense.as_mut().unwrap().denseinfo.as_mut().unwrap().changeset.push(last_changeset);
-
-        let user = node.user();
 
         last_sid = string_table_builder.add(node.user());
         dense.as_mut().unwrap().denseinfo.as_mut().unwrap().user_sid.push(last_sid);
@@ -85,10 +83,10 @@ impl DenseGroupBuilder {
         self.dense.as_mut().unwrap().id.push(current_id - self.last_id);
         self.last_id = current_id;
 
-        let current_lon = (node.coordinate().lon * 1000000000 as f64  / self.granularity as f64 - self.lon_offset as f64) as i64;
+        let current_lon = (node.coordinate().lon() * 1000000000 as f64  / self.granularity as f64 - self.lon_offset as f64) as i64;
         self.dense.as_mut().unwrap().lon.push(current_lon - self.last_lon);
         self.last_lon = current_lon;
-        let current_lat = (node.coordinate().lat * 1000000000  as f64 / self.granularity  as f64 - self.lat_offset as f64) as i64;
+        let current_lat = (node.coordinate().lat() * 1000000000  as f64 / self.granularity  as f64 - self.lat_offset as f64) as i64;
         self.dense.as_mut().unwrap().lat.push(current_lat - self.last_lat);
         self.last_lat = current_lat;
 
@@ -113,8 +111,8 @@ impl DenseGroupBuilder {
         self.last_sid = current_sid;
 
         for tag in node.tags() {
-            let key_index = string_table_builder.add(&tag.k);
-            let value_index = string_table_builder.add(&tag.v);
+            let key_index = string_table_builder.add(tag.k());
+            let value_index = string_table_builder.add(tag.v());
             self.dense.as_mut().unwrap().keys_vals.push(key_index);
             self.dense.as_mut().unwrap().keys_vals.push(value_index);
         }

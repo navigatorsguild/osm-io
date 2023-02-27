@@ -21,7 +21,7 @@ impl ElementIterator {
 
     fn create_element_iterator(file_block_iterator: &mut FileBlockIterator) -> Option<IntoIter<Element>> {
         if let Some(current_block) = file_block_iterator.next() {
-            if let FileBlock::Data { metadata, data } = current_block {
+            if let FileBlock::Data { metadata: _, data } = current_block {
                 Some(data.elements.into_iter())
             } else {
                 None

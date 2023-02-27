@@ -1,35 +1,29 @@
-use std::borrow::{Borrow, BorrowMut};
 use std::collections::HashMap;
-use std::fs::File;
-use std::ops::{AddAssign, Deref, DerefMut};
+use std::ops::{AddAssign, DerefMut};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex, RwLock, TryLockResult};
-use std::sync::atomic::Ordering;
-use std::thread;
+use std::sync::{Arc, Mutex, RwLock};
 use command_executor::errors::GenericError;
 use command_executor::executor::command::Command;
 use command_executor::executor::shutdown_mode::ShutdownMode;
 use command_executor::executor::thread_pool::ThreadPool;
 use command_executor::executor::thread_pool_builder::ThreadPoolBuilder;
 use simple_logger::SimpleLogger;
-use osm_io::config::Config;
-use osm_io::osm::model::element::Element;
 use osm_io::osm::pbf;
 use osm_io::osm::pbf::blob_desc::BlobDesc;
 use osm_io::osm::pbf::compression_type::CompressionType;
-use osm_io::osm::pbf::file_block;
 use osm_io::osm::pbf::file_block::FileBlock;
 use osm_io::osm::pbf::file_block_metadata::FileBlockMetadata;
 use osm_io::reporting::stopwatch::StopWatch;
+use std::cell::{RefCell};
+use std::sync::atomic::{AtomicI64, Ordering};
+use osm_io::osm::model::element::Element;
+use osm_io::osm::pbf::file_info::FileInfo;
+use osm_io::osm::pbf::reader::Reader;
+use osm_io::osm::pbf::writer::Writer;
+use crate::common::read_fixture_analysis;
+use rayon::iter::ParallelIterator;
 
 mod common;
-
-use std::cell::{Ref, RefCell};
-use std::env::Args;
-use std::time::Duration;
-use bytes::Buf;
-use osm_io::osm::model::bounding_box::BoundingBox;
-use osm_io::osm::pbf::writer::Writer;
 
 thread_local! {
     pub static ORDERING_BUFFER: RefCell<HashMap<usize, (FileBlockMetadata, Vec<u8>, Vec<u8>)>> = RefCell::new(HashMap::new());
@@ -41,20 +35,14 @@ thread_local! {
 
 struct DecodeBlobCommand {
     blob: BlobDesc,
-    work_stages: Arc<RwLock<HashMap::<String, Arc<RwLock<ThreadPool>>>>>,
-    config: Arc<RwLock<Config>>,
 }
 
 impl DecodeBlobCommand {
     pub fn new(
         blob: BlobDesc,
-        work_stages: Arc<RwLock<HashMap::<String, Arc<RwLock<ThreadPool>>>>>,
-        config: Arc<RwLock<Config>>,
     ) -> DecodeBlobCommand {
         DecodeBlobCommand {
             blob,
-            work_stages,
-            config,
         }
     }
 }
@@ -64,9 +52,14 @@ impl Command for DecodeBlobCommand {
         // ignore the FileBlock::Header message
         let file_block = FileBlock::from_blob_desc(&self.blob).unwrap();
         if file_block.as_osm_data().is_ok() {
-            let ws = self.work_stages.read().unwrap();
-            let pbw = ws.get("pbf-block-encoder").unwrap().read().unwrap();
-            pbw.submit(Box::new(EncodeBlobCommand::new(file_block, self.work_stages.clone(), self.config.clone())));
+            NEXT_THREAD_POOL.with(
+                |next| {
+                    let n = next.replace(None).unwrap();
+                    next.replace(Some(n.clone()));
+                    let tp = n.read().unwrap();
+                    tp.submit(Box::new(EncodeBlobCommand::new(file_block)));
+                }
+            );
         }
         Ok(())
     }
@@ -74,44 +67,38 @@ impl Command for DecodeBlobCommand {
 
 struct EncodeBlobCommand {
     file_block: FileBlock,
-    work_stages: Arc<RwLock<HashMap::<String, Arc<RwLock<ThreadPool>>>>>,
-    config: Arc<RwLock<Config>>,
 }
 
 impl EncodeBlobCommand {
     pub fn new(
         file_block: FileBlock,
-        work_stages: Arc<RwLock<HashMap::<String, Arc<RwLock<ThreadPool>>>>>,
-        config: Arc<RwLock<Config>>,
     ) -> EncodeBlobCommand {
         EncodeBlobCommand {
             file_block,
-            work_stages,
-            config,
         }
     }
 }
 
 impl Command for EncodeBlobCommand {
     fn execute(&self) -> Result<(), GenericError> {
-        let mut bounding_box = None;
         let (header, body) = FileBlock::serialize(&self.file_block, CompressionType::Zlib).unwrap();
-        let ws = self.work_stages.read().unwrap();
-        let pbw = ws.get("pbf-block-writer").unwrap().read().unwrap();
-        let mut metadata = self.file_block.metadata().clone();
-        if bounding_box.is_some() {
-            metadata.set_bounding_box(bounding_box.unwrap())
-        }
-        pbw.submit(
-            Box::new(
-                WriteBlobsCommand::new(
-                    Mutex::new(metadata),
-                    Mutex::new(header),
-                    Mutex::new(body),
-                    self.work_stages.clone(),
-                    self.config.clone(),
-                )
-            )
+        let metadata = self.file_block.metadata().clone();
+
+        NEXT_THREAD_POOL.with(
+            |next| {
+                let n = next.replace(None).unwrap();
+                next.replace(Some(n.clone()));
+                let tp = n.read().unwrap();
+                tp.submit(
+                    Box::new(
+                        WriteBlobsCommand::new(
+                            Mutex::new(metadata),
+                            Mutex::new(header),
+                            Mutex::new(body),
+                        )
+                    )
+                );
+            }
         );
         Ok(())
     }
@@ -121,8 +108,6 @@ struct WriteBlobsCommand {
     metadata: Mutex<FileBlockMetadata>,
     header: Mutex<Vec<u8>>,
     body: Mutex<Vec<u8>>,
-    work_stages: Arc<RwLock<HashMap::<String, Arc<RwLock<ThreadPool>>>>>,
-    config: Arc<RwLock<Config>>,
 }
 
 impl WriteBlobsCommand {
@@ -130,14 +115,10 @@ impl WriteBlobsCommand {
         metadata: Mutex<FileBlockMetadata>,
         header: Mutex<Vec<u8>>,
         body: Mutex<Vec<u8>>,
-        work_stages: Arc<RwLock<HashMap::<String, Arc<RwLock<ThreadPool>>>>>,
-        config: Arc<RwLock<Config>>,
     ) -> WriteBlobsCommand {
         WriteBlobsCommand {
             metadata,
             header,
-            work_stages,
-            config,
             body,
         }
     }
@@ -164,21 +145,6 @@ impl Command for WriteBlobsCommand {
                             body
                         ),
                     );
-            }
-        );
-
-        PBF_WRITER.with(
-            |mut writer| {
-                if writer.borrow().is_none() {
-                    let config = self.config.read().unwrap();
-                    let mut w = Writer::from_file_info(
-                        config.output.clone(),
-                        config.file_info.clone(),
-                        CompressionType::Zlib,
-                    ).expect("Failed to create a writer");
-                    w.write_header().expect("Failed to write header");
-                    writer.replace(Some(w));
-                }
             }
         );
 
@@ -212,28 +178,6 @@ impl Command for WriteBlobsCommand {
     }
 }
 
-// struct InitThreadLocalCommand {
-//     f: Arc<Mutex<dyn FnMut() + Send + Sync>>,
-// }
-//
-// impl InitThreadLocalCommand {
-//     pub fn new(f: Arc<Mutex<dyn FnMut() + Send + Sync>>) -> InitThreadLocalCommand {
-//         InitThreadLocalCommand {
-//             f
-//         }
-//     }
-// }
-//
-// impl Command for InitThreadLocalCommand {
-//     fn execute(&self) -> Result<(), GenericError> {
-//         let mut f = self.f.lock().unwrap();
-//         f();
-//         println!("running in thread");
-//         Ok(())
-//     }
-// }
-
-
 #[test]
 fn test_pbf_rw_parallel_pipe() {
     SimpleLogger::new().init().unwrap();
@@ -241,24 +185,14 @@ fn test_pbf_rw_parallel_pipe() {
     log::info!("Started OSM PBF rw parallel pipe test");
     let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
     let output_path = PathBuf::from("./tests/parallel-results/malta-230109.osm.pbf");
+    let fixture_analysis_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf.osm.pbf.analysis.json");
 
+    let fixture_analysis = read_fixture_analysis(&fixture_analysis_path);
 
     let reader = pbf::reader::Reader::new(input_path.clone()).unwrap();
     let mut info = reader.info().clone();
-    info.writingprogram = Some("rw-pipe-test-writer".to_string());
-    info.source = Some("from fixture".to_string());
-
-    let config = Arc::new(
-        RwLock::new(
-            Config::new(
-                input_path.clone(),
-                "pbf".to_string(),
-                output_path.clone(),
-                "pbf".to_string(),
-                info.clone(),
-            )
-        )
-    );
+    info.set_writingprogram(&Some("rw-pipe-test-writer".to_string()));
+    info.set_source(&Some("from fixture".to_string()));
 
     log::info!("start iteration over blobs for {:?}", input_path);
     let mut stopwatch = StopWatch::new();
@@ -276,7 +210,6 @@ fn test_pbf_rw_parallel_pipe() {
         )
     );
 
-
     let pbf_block_encoder_pool = Arc::new(
         RwLock::new(
             ThreadPoolBuilder::new()
@@ -288,34 +221,6 @@ fn test_pbf_rw_parallel_pipe() {
                 .unwrap()
         )
     );
-
-
-    ////////////////
-    // {
-    //     let pbf_block_encoder_pool_clone = pbf_block_encoder_pool.clone();
-    //     let pbd = pbf_block_decoder_pool.read().unwrap();
-    //     let f = Arc::new(
-    //         Mutex::new(
-    //             move || {
-    //                 NEXT_THREAD_POOL.with(
-    //                     |next| {
-    //                         println!("@@@@@@@@@@ {:?}", thread::current().name());
-    //                         next.replace(Some(pbf_block_encoder_pool_clone.clone()));
-    //                     }
-    //                 );
-    //             }
-    //         )
-    //     );
-    //     pbd.submit(
-    //         Box::new(
-    //             InitThreadLocalCommand::new(
-    //                 f.clone()
-    //             )
-    //         )
-    //     );
-    // }
-    //////////////
-
 
     let pbf_block_writer_pool = Arc::new(
         RwLock::new(
@@ -329,52 +234,96 @@ fn test_pbf_rw_parallel_pipe() {
         )
     );
 
-    let work_stages = Arc::new(RwLock::new(HashMap::<String, Arc<RwLock<ThreadPool>>>::new()));
-    {
-        let mut ws = work_stages.write().unwrap();
-        ws.insert("pbf-block-decoder".to_string(), pbf_block_decoder_pool);
-        ws.insert("pbf-block-encoder".to_string(), pbf_block_encoder_pool);
-        ws.insert("pbf-block-writer".to_string(), pbf_block_writer_pool);
-    }
+    set_next(pbf_block_decoder_pool.clone(), pbf_block_encoder_pool.clone());
+    set_next(pbf_block_encoder_pool.clone(), pbf_block_writer_pool.clone());
+    init_writer(pbf_block_writer_pool.clone(), output_path.clone(), info.clone(), CompressionType::Zlib);
 
     let mut i = 0_usize;
     for blob in reader.blobs().unwrap() {
-        let ws = work_stages.read().unwrap();
-        let pbd = ws.get("pbf-block-decoder").unwrap().read().unwrap();
-        pbd.submit(Box::new(DecodeBlobCommand::new(blob, work_stages.clone(), config.clone())));
+        let pbd = pbf_block_decoder_pool.read().unwrap();
+        pbd.submit(Box::new(DecodeBlobCommand::new(blob)));
         i.add_assign(1);
     }
 
     log::info!("Finished submitting blobs");
 
-    shutdown_work_stage(&work_stages, "pbf-block-decoder");
-    shutdown_work_stage(&work_stages, "pbf-block-encoder");
-    shutdown_work_stage(&work_stages, "pbf-block-writer");
+    shutdown(pbf_block_decoder_pool);
+    shutdown(pbf_block_encoder_pool);
+    shutdown(pbf_block_writer_pool);
+
+    let test_reader = Reader::new(output_path).unwrap();
+    let atomic_nodes = Arc::new(AtomicI64::new(0));
+    let atomic_ways = Arc::new(AtomicI64::new(0));
+    let atomic_relations = Arc::new(AtomicI64::new(0));
+    test_reader.parallel_blobs().unwrap().for_each(
+        |blob_desc| {
+            for element in FileBlock::from_blob_desc(&blob_desc).unwrap().elements() {
+                match element {
+                    Element::Node { node: _ } => {
+                        atomic_nodes.fetch_add(1, Ordering::Relaxed);
+                    }
+                    Element::Way { way: _ } => {
+                        atomic_ways.fetch_add(1, Ordering::Relaxed);
+                    }
+                    Element::Relation { relation: _ } => {
+                        atomic_relations.fetch_add(1, Ordering::Relaxed);
+                    }
+                    Element::Sentinel => {}
+                }
+            }
+        }
+    );
+    assert_eq!(atomic_nodes.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["nodes"].as_i64().unwrap());
+    assert_eq!(atomic_ways.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["ways"].as_i64().unwrap());
+    assert_eq!(atomic_relations.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["relations"].as_i64().unwrap());
+
     log::info!("Finished OSM PBF rw parallel pipe test, time: {stopwatch}");
 }
 
-fn shutdown_work_stage(work_stages: &Arc<RwLock<HashMap<String, Arc<RwLock<ThreadPool>>>>>, name: &str) {
-    loop {
-        let mut tp_lock_opt = None;
-        match work_stages.try_write() {
-            Ok(mut ws) => {
-                tp_lock_opt = ws.remove(name);
-                log::info!("removed {name} thread pool from work stages");
-            }
-            Err(_) => {
-                log::info!("Failed to get a write lock for work stages. sleeping");
-                thread::sleep(Duration::from_millis(10));
-            }
-        }
-        match tp_lock_opt {
-            None => {}
-            Some(pbd_lock) => {
-                let mut tp = pbd_lock.write().unwrap();
-                tp.shutdown();
-                tp.join().expect("failed joining {name} pool");
-                log::info!("Shut down {name} thread pool");
-                break;
-            }
-        }
-    }
+fn init_writer(writer_thread_pool: Arc<RwLock<ThreadPool>>, output_path: PathBuf, info: FileInfo, compression_type: CompressionType) {
+    let tp = writer_thread_pool.read().unwrap();
+    tp.in_all_threads(
+        Arc::new(
+            Mutex::new(
+                move || {
+                    PBF_WRITER.with(
+                        |writer| {
+                            if writer.borrow().is_none() {
+                                let mut w = Writer::from_file_info(
+                                    output_path.clone(),
+                                    info.clone(),
+                                    compression_type.clone(),
+                                ).expect("Failed to create a writer");
+                                w.write_header().expect("Failed to write header");
+                                writer.replace(Some(w));
+                            }
+                        }
+                    )
+                }
+            )
+        )
+    );
+}
+
+fn shutdown(thread_pool: Arc<RwLock<ThreadPool>>) {
+    let mut tp = thread_pool.write().unwrap();
+    tp.shutdown();
+    tp.join().expect("Failed to join thread pool");
+}
+
+fn set_next(target: Arc<RwLock<ThreadPool>>, next: Arc<RwLock<ThreadPool>>) {
+    let t = target.read().unwrap();
+    t.in_all_threads(
+        Arc::new(
+            Mutex::new(
+                move || {
+                    NEXT_THREAD_POOL.with(
+                        |n| {
+                            n.replace(Some(next.clone()));
+                        }
+                    );
+                }
+            )
+        )
+    );
 }
