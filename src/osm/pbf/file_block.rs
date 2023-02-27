@@ -224,6 +224,21 @@ impl FileBlock {
         }
     }
 
+    pub fn is_osm_header(&self) -> bool {
+        match self {
+            FileBlock::Header { header, .. } => {
+                true
+            }
+            FileBlock::Data { .. } => {
+                false
+            }
+        }
+    }
+
+    pub fn is_osm_data(&self) -> bool {
+        !self.is_osm_header()
+    }
+
     pub fn as_osm_data(&self) -> Result<&OsmData, GenericError> {
         match self {
             FileBlock::Header { .. } => {
