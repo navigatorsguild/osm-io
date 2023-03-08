@@ -1,6 +1,6 @@
 use std::ops::AddAssign;
 use std::path::PathBuf;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc};
 use std::sync::atomic::{AtomicI64, Ordering};
 use command_executor::errors::GenericError;
 use command_executor::executor::command::Command;
@@ -146,7 +146,6 @@ impl Command for CountElementsCommand {
     }
 }
 
-
 fn prof_command_executor_reader(input_path: PathBuf) {
     log::info!("Start profiling command executor reader, input: {:?}", input_path);
     let mut stopwatch = StopWatch::new();
@@ -181,7 +180,7 @@ fn prof_command_executor_reader(input_path: PathBuf) {
     }
 
     element_counter_pool.shutdown();
-    element_counter_pool.join();
+    element_counter_pool.join().expect("Failed to join element counter pool");
 
 
     log::info!(

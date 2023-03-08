@@ -35,7 +35,6 @@ pub enum Member {
     },
 }
 
-
 #[derive(Debug)]
 pub struct Relation {
     id: i64,

@@ -15,7 +15,7 @@ use crate::osmpbf::{PrimitiveBlock, PrimitiveGroup};
 #[derive(Debug, Default)]
 pub struct OsmData {
     // TODO: check impact on performance if changed to deq
-    pub elements: Vec<osm::model::element::Element>,
+    elements: Vec<Element>,
     pub index: usize,
     pub bounding_box: Option<BoundingBox>,
     // TODO: revisit pub members.
@@ -35,7 +35,7 @@ impl OsmData {
         let date_granularity = primitive_block.date_granularity();
         let lat_offset = primitive_block.lat_offset();
         let lon_offset = primitive_block.lon_offset();
-        let mut elements = Vec::<osm::model::element::Element>::new();
+        let mut elements = Vec::<Element>::new();
         for g in &primitive_block.primitivegroup {
             Self::read_dense(&g.dense, &string_table, granularity, date_granularity, lat_offset, lon_offset, &mut elements);
             Self::read_nodes(&g.nodes, &string_table, granularity, date_granularity, lat_offset, lon_offset, &mut elements);
@@ -46,6 +46,10 @@ impl OsmData {
         Ok(
             OsmData { index, elements, bounding_box: None }
         )
+    }
+
+    pub fn from_elements(index: usize, elements: Vec<Element>, bounding_box: Option<BoundingBox>) -> OsmData {
+        OsmData { index, elements, bounding_box }
     }
 
     pub fn compute_bounding_box(&self) -> Option<BoundingBox> {
@@ -82,7 +86,7 @@ impl OsmData {
         result
     }
 
-    fn read_dense(dense_group: &Option<osmpbf::DenseNodes>, string_table: &Vec<String>, granularity: i64, date_granularity: i32, lat_offset: i64, lon_offset: i64, elements: &mut Vec<osm::model::element::Element>) {
+    fn read_dense(dense_group: &Option<osmpbf::DenseNodes>, string_table: &Vec<String>, granularity: i64, date_granularity: i32, lat_offset: i64, lon_offset: i64, elements: &mut Vec<Element>) {
         if let Some(dense) = dense_group {
             let mut last_id = 0_i64;
             let mut last_lat = 0_i64;
@@ -158,12 +162,12 @@ impl OsmData {
                     visible,
                     tags,
                 );
-                elements.push(osm::model::element::Element::Node { node });
+                elements.push(Element::Node { node });
             }
         }
     }
 
-    fn read_nodes(node_group: &Vec<osmpbf::Node>, string_table: &Vec<String>, granularity: i64, date_granularity: i32, lat_offset: i64, lon_offset: i64, elements: &mut Vec<osm::model::element::Element>) {
+    fn read_nodes(node_group: &Vec<osmpbf::Node>, string_table: &Vec<String>, granularity: i64, date_granularity: i32, lat_offset: i64, lon_offset: i64, elements: &mut Vec<Element>) {
         for node in node_group {
             let id = node.id;
             let coordinate = osm::model::coordinate::Coordinate::new(
@@ -192,7 +196,7 @@ impl OsmData {
                 visible,
                 tags,
             );
-            elements.push(osm::model::element::Element::Node { node });
+            elements.push(Element::Node { node });
         }
     }
 
@@ -218,7 +222,7 @@ impl OsmData {
     }
 
 
-    fn read_ways(way_group: &Vec<osmpbf::Way>, string_table: &Vec<String>, _granularity: i64, date_granularity: i32, elements: &mut Vec<osm::model::element::Element>) {
+    fn read_ways(way_group: &Vec<osmpbf::Way>, string_table: &Vec<String>, _granularity: i64, date_granularity: i32, elements: &mut Vec<Element>) {
         for way in way_group {
             let id = way.id;
             let (timestamp, changeset, uid, user, visible, version) =
@@ -249,11 +253,11 @@ impl OsmData {
                 refs,
                 tags,
             );
-            elements.push(osm::model::element::Element::Way { way });
+            elements.push(Element::Way { way });
         }
     }
 
-    fn read_relations(relation_group: &Vec<osmpbf::Relation>, string_table: &Vec<String>, _granularity: i64, date_granularity: i32, elements: &mut Vec<osm::model::element::Element>) {
+    fn read_relations(relation_group: &Vec<osmpbf::Relation>, string_table: &Vec<String>, _granularity: i64, date_granularity: i32, elements: &mut Vec<Element>) {
         for relation in relation_group {
             let id = relation.id;
             let (timestamp, changeset, uid, user, visible, version) =
@@ -301,11 +305,11 @@ impl OsmData {
                 members,
                 tags,
             );
-            elements.push(osm::model::element::Element::Relation { relation });
+            elements.push(Element::Relation { relation });
         }
     }
 
-    fn read_changesets(changeset_group: &Vec<osmpbf::ChangeSet>, _string_table: &Vec<String>, _granularity: i64, _date_granularity: i32, _lat_offset: i64, _lon_offset: i64, _elements: &mut Vec<osm::model::element::Element>) {
+    fn read_changesets(changeset_group: &Vec<osmpbf::ChangeSet>, _string_table: &Vec<String>, _granularity: i64, _date_granularity: i32, _lat_offset: i64, _lon_offset: i64, _elements: &mut Vec<Element>) {
         for _changeset in changeset_group {
             panic!("According to documentation changesets are not used");
         }
@@ -376,5 +380,14 @@ impl OsmData {
         let mut buf = Vec::<u8>::with_capacity(primitive_block.encoded_len());
         primitive_block.encode(&mut buf)?;
         Ok(buf)
+    }
+
+    pub fn elements(&self) -> &Vec<Element> {
+        &self.elements
+    }
+
+    pub fn take_elements(&mut self) -> Vec<Element> {
+        // std::mem::replace(&mut self.elements, Vec::<Element>::default())
+        std::mem::take(&mut self.elements)
     }
 }

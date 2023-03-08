@@ -15,13 +15,8 @@ use osm_io::osm::pbf::file_block::FileBlock;
 use osm_io::osm::pbf::file_block_metadata::FileBlockMetadata;
 use osm_io::reporting::stopwatch::StopWatch;
 use std::cell::{RefCell};
-use std::sync::atomic::{AtomicI64, Ordering};
-use osm_io::osm::model::element::Element;
 use osm_io::osm::pbf::file_info::FileInfo;
-use osm_io::osm::pbf::reader::Reader;
 use osm_io::osm::pbf::writer::Writer;
-use crate::common::read_fixture_analysis;
-use rayon::iter::ParallelIterator;
 
 mod common;
 
@@ -187,8 +182,6 @@ fn test_pbf_rw_parallel_pipe() {
     let output_path = PathBuf::from("./tests/parallel-results/malta-230109.osm.pbf");
     let fixture_analysis_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf.osm.pbf.analysis.json");
 
-    let fixture_analysis = read_fixture_analysis(&fixture_analysis_path);
-
     let reader = pbf::reader::Reader::new(input_path.clone()).unwrap();
     let mut info = reader.info().clone();
     info.set_writingprogram(&Some("rw-pipe-test-writer".to_string()));
@@ -251,31 +244,7 @@ fn test_pbf_rw_parallel_pipe() {
     shutdown(pbf_block_encoder_pool);
     shutdown(pbf_block_writer_pool);
 
-    let test_reader = Reader::new(output_path).unwrap();
-    let atomic_nodes = Arc::new(AtomicI64::new(0));
-    let atomic_ways = Arc::new(AtomicI64::new(0));
-    let atomic_relations = Arc::new(AtomicI64::new(0));
-    test_reader.parallel_blobs().unwrap().for_each(
-        |blob_desc| {
-            for element in FileBlock::from_blob_desc(&blob_desc).unwrap().elements() {
-                match element {
-                    Element::Node { node: _ } => {
-                        atomic_nodes.fetch_add(1, Ordering::Relaxed);
-                    }
-                    Element::Way { way: _ } => {
-                        atomic_ways.fetch_add(1, Ordering::Relaxed);
-                    }
-                    Element::Relation { relation: _ } => {
-                        atomic_relations.fetch_add(1, Ordering::Relaxed);
-                    }
-                    Element::Sentinel => {}
-                }
-            }
-        }
-    );
-    assert_eq!(atomic_nodes.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["nodes"].as_i64().unwrap());
-    assert_eq!(atomic_ways.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["ways"].as_i64().unwrap());
-    assert_eq!(atomic_relations.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["relations"].as_i64().unwrap());
+    common::analyze_pbf_output(output_path, fixture_analysis_path);
 
     log::info!("Finished OSM PBF rw parallel pipe test, time: {stopwatch}");
 }

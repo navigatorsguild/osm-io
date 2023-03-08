@@ -9,6 +9,7 @@ use osm_io::osm::pbf::reader::Reader;
 use crate::common::read_fixture_analysis;
 use rayon::iter::ParallelIterator;
 
+#[allow(dead_code)]
 mod common;
 
 #[test]
@@ -16,12 +17,12 @@ fn test_pbf_reader() {
     SimpleLogger::new().init().unwrap();
     log::info!("Started OSM PBF reader test");
     common::setup();
-    let test_fixture_path = PathBuf::from("./tests/fixtures/niue-230225-geofabrik.osm.pbf");
+    let input_path = PathBuf::from("./tests/fixtures/niue-230225-geofabrik.osm.pbf");
     let fixture_analysis_path = PathBuf::from("./tests/fixtures/niue-230225-geofabrik.osm.pbf.analysis.json");
 
     let fixture_analysis = read_fixture_analysis(&fixture_analysis_path);
 
-    let reader = Reader::new(test_fixture_path).unwrap();
+    let reader = Reader::new(input_path).unwrap();
 
     let mut header_blocks = 0;
     let mut data_blocks = 0;
@@ -85,6 +86,8 @@ fn test_pbf_reader() {
     assert_eq!(atomic_nodes.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["nodes"].as_i64().unwrap());
     assert_eq!(atomic_ways.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["ways"].as_i64().unwrap());
     assert_eq!(atomic_relations.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["relations"].as_i64().unwrap());
+
+
 
     log::info!("Finished OSM PBF reader test");
 }

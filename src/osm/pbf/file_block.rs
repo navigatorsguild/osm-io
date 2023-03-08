@@ -223,10 +223,9 @@ impl FileBlock {
             }
         }
     }
-
-    pub fn is_osm_header(&self) -> bool {
+pub fn is_osm_header(&self) -> bool {
         match self {
-            FileBlock::Header { header, .. } => {
+            FileBlock::Header { header: _, .. } => {
                 true
             }
             FileBlock::Data { .. } => {
@@ -251,7 +250,18 @@ impl FileBlock {
     }
 
     pub fn elements(&self) -> &Vec<Element> {
-        &self.as_osm_data().unwrap().elements
+        self.as_osm_data().unwrap().elements()
+    }
+
+    pub fn release_elements(&mut self) -> Vec<Element> {
+        match self {
+            FileBlock::Header { .. } => {
+                panic!("Not a Data variant")
+            }
+            FileBlock::Data { data, .. } => {
+                data.take_elements()
+            }
+        }
     }
 }
 
