@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use crate::error::GenericError;
 use crate::osm::apidb_dump::relation_member_record::RelationMemberRecord;
 use crate::osm::apidb_dump::relation_record::RelationRecord;
 use crate::osm::apidb_dump::relation_relation::RelationRelation;
@@ -23,7 +22,7 @@ impl RelationRelationsReader {
         relations_def: &TableDef,
         relation_members_def: &TableDef,
         relation_tags_def: &TableDef,
-    ) -> Result<RelationRelationsReader, GenericError> {
+    ) -> Result<RelationRelationsReader, anyhow::Error> {
         let relations_reader = TableReader::new(relations_def)?;
         let relation_members_reader = TableReader::new(relation_members_def)?;
         let relation_tags_reader = TableReader::new(relation_tags_def)?;
@@ -56,7 +55,7 @@ pub(crate) struct RelationRelationsIterator {
 
 
 impl RelationRelationsIterator {
-    pub(crate) fn new(relation_relations_reader: &RelationRelationsReader) -> Result<RelationRelationsIterator, GenericError> {
+    pub(crate) fn new(relation_relations_reader: &RelationRelationsReader) -> Result<RelationRelationsIterator, anyhow::Error> {
         let reader = relation_relations_reader.clone();
         let relations_iterator = reader.relations_reader.clone().into_iter();
         let relation_members_iterator = reader.relation_members_reader.clone().into_iter();

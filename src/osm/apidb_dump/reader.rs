@@ -4,7 +4,6 @@ use std::ops::{AddAssign, SubAssign};
 use std::path::PathBuf;
 use regex::Regex;
 use transient_btree_index::{BtreeConfig, BtreeIndex};
-use crate::error::GenericError;
 use crate::osm::apidb_dump::block_iterator::BlockIterator;
 use crate::osm::apidb_dump::table_def::TableDef;
 
@@ -15,7 +14,7 @@ pub struct Reader {
 }
 
 impl Reader {
-    pub fn new(input_path: PathBuf, tmp_path: PathBuf) -> Result<Reader, GenericError> {
+    pub fn new(input_path: PathBuf, tmp_path: PathBuf) -> Result<Reader, anyhow::Error> {
         let mut tables: HashMap<String, TableDef> = HashMap::new();
 
         let toc_path = input_path.join("toc.dat");
@@ -100,7 +99,7 @@ impl Reader {
         result
     }
 
-    pub fn blocks(&self) -> Result<BlockIterator, GenericError> {
+    pub fn blocks(&self) -> Result<BlockIterator, anyhow::Error> {
         BlockIterator::new(self.tables.clone())
     }
 }

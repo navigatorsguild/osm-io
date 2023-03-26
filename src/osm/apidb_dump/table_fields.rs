@@ -1,7 +1,7 @@
+use anyhow::anyhow;
 // use std::borrow::Borrow;
 // use std::ops::Index;
 use crate::osm::apidb_dump::table_fields::TableFields::{Changesets, NodeTags, RelationMembers, Relations, RelationTags, Users, WayNodes, Ways, WayTags,};
-use crate::error::{GenericError, OsmIoError};
 
 #[derive(Debug, Copy, Clone)]
 pub enum TableFields {
@@ -109,10 +109,10 @@ pub enum TableFields {
 }
 
 impl TableFields {
-    fn index(v: &str, fields: &Vec<String>) -> Result<usize, GenericError> {
+    fn index(v: &str, fields: &Vec<String>) -> Result<usize, anyhow::Error> {
         match fields.iter().position(|e| {*e == v.to_string()}) {
             None => {
-                Err(OsmIoError::as_generic(format!("Field not found: {}", v)))
+                Err(anyhow!("Field not found: {}", v))
             }
             Some(i) => {
                 Ok(i)
@@ -120,7 +120,7 @@ impl TableFields {
         }
     }
 
-    pub fn new(name: String, fields: Vec<String>) -> Result<TableFields, GenericError> {
+    pub fn new(name: String, fields: Vec<String>) -> Result<TableFields, anyhow::Error> {
         match name.as_str() {
             "public.nodes" => {
                 Ok(
@@ -265,7 +265,7 @@ impl TableFields {
                 )
             }
             _ => {
-                Err(OsmIoError::as_generic(format!("Unknown table: {}", name)))
+                Err(anyhow!("Unknown table: {}", name))
             }
         }
     }

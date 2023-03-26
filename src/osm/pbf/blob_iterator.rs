@@ -3,7 +3,6 @@ use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::ops::AddAssign;
 use std::path::PathBuf;
 use prost::Message;
-use crate::error::GenericError;
 use crate::{osm, osmpbf};
 
 pub struct BlobIterator {
@@ -14,7 +13,7 @@ pub struct BlobIterator {
 }
 
 impl BlobIterator {
-    pub fn new(path: PathBuf) -> Result<BlobIterator, GenericError> {
+    pub fn new(path: PathBuf) -> Result<BlobIterator, anyhow::Error> {
         let file = File::open(path.clone())?;
         Ok(
             BlobIterator {

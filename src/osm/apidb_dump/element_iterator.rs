@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::fs::read;
 use std::hash::Hash;
 use std::path::Iter;
+use anyhow::anyhow;
 use fsds::text_file::Sort;
 use regex::Regex;
 use transient_btree_index::{BtreeConfig, BtreeIndex};
-use crate::error::{GenericError, OsmIoError};
 use crate::osm::apidb_dump::node_relation::NodeRelation;
 use crate::osm::apidb_dump::node_relations_reader::{NodeRelationsIterator, NodeRelationsReader};
 use crate::osm::apidb_dump::relation_member_record::RelationMemberType;
@@ -42,7 +42,7 @@ pub struct ElementIterator {
 }
 
 impl ElementIterator {
-    pub fn new(tables: HashMap<String, TableDef>) -> Result<ElementIterator, GenericError> {
+    pub fn new(tables: HashMap<String, TableDef>) -> Result<ElementIterator, anyhow::Error> {
         Self::sort_tables(&tables)?;
         let user_index = Self::index_users(&tables)?;
         let changeset_user_index = Self::index_changesets(&tables)?;
@@ -79,33 +79,33 @@ impl ElementIterator {
         )
     }
 
-    fn index_changesets(tables: &HashMap<String, TableDef>) -> Result<BtreeIndex<i64, i64>, GenericError> {
+    fn index_changesets(tables: &HashMap<String, TableDef>) -> Result<BtreeIndex<i64, i64>, anyhow::Error> {
         let mut changeset_user_index = BtreeIndex::<i64, i64>::with_capacity(BtreeConfig::default(), 0)?;
         let reader = TableReader::new(tables.get("public.changesets").unwrap())?;
         for record in reader {
             if let TableRecord::Changeset { changeset_record } = record {
                 changeset_user_index.insert(changeset_record.id(), changeset_record.user_id()).unwrap();
             } else {
-                return Err(OsmIoError::as_generic(format!("Not a changeset record")));
+                return Err(anyhow!("Not a changeset record"));
             }
         }
         Ok(changeset_user_index)
     }
 
-    fn index_users(tables: &HashMap<String, TableDef>) -> Result<BtreeIndex<i64, String>, GenericError> {
+    fn index_users(tables: &HashMap<String, TableDef>) -> Result<BtreeIndex<i64, String>, anyhow::Error> {
         let mut user_index = BtreeIndex::<i64, String>::with_capacity(BtreeConfig::default(), 0)?;
         let reader = TableReader::new(tables.get("public.users").unwrap())?;
         for record in reader {
             if let TableRecord::User { user_record } = &record {
                 user_index.insert(user_record.id(), user_record.display_name().clone()).unwrap();
             } else {
-                return Err(OsmIoError::as_generic(format!("Not a user record")));
+                return Err(anyhow!("Not a user record"));
             }
         }
         Ok(user_index)
     }
 
-    fn sort_tables(tables: &HashMap<String, TableDef>) -> Result<(), GenericError> {
+    fn sort_tables(tables: &HashMap<String, TableDef>) -> Result<(), anyhow::Error> {
         for (table_name, table_def) in tables {
             std::fs::create_dir_all(table_def.tmp_path())?;
             println!("table: {table_name}");

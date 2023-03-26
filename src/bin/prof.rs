@@ -2,7 +2,6 @@ use std::ops::AddAssign;
 use std::path::PathBuf;
 use std::sync::{Arc};
 use std::sync::atomic::{AtomicI64, Ordering};
-use command_executor::errors::GenericError;
 use command_executor::executor::Command;
 use command_executor::executor::ShutdownMode;
 use command_executor::executor::ThreadPoolBuilder;
@@ -116,7 +115,7 @@ impl CountElementsCommand {
 }
 
 impl Command for CountElementsCommand {
-    fn execute(&self) -> Result<(), GenericError> {
+    fn execute(&self) -> Result<(), anyhow::Error> {
         // ignore the FileBlock::Header message
         let file_block = FileBlock::from_blob_desc(&self.blob).unwrap();
         if file_block.is_osm_data() {

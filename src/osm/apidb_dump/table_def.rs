@@ -2,7 +2,6 @@ use std::fmt::format;
 use std::path::PathBuf;
 use num_format::Locale::pa;
 
-use crate::error::GenericError;
 use crate::osm::apidb_dump::table_fields::TableFields;
 use crate::osm::apidb_dump::table_pkey::TablePkey;
 
@@ -26,7 +25,7 @@ impl TableDef {
         PathBuf::from(path.parent().unwrap())
     }
 
-    pub fn new(name: String, path: PathBuf, tmp_path: PathBuf, fields: Vec<String>) -> Result<TableDef, GenericError> {
+    pub fn new(name: String, path: PathBuf, tmp_path: PathBuf, fields: Vec<String>) -> Result<TableDef, anyhow::Error> {
         let table_def = TableDef {
             name: name.clone(),
             path: path.clone(),

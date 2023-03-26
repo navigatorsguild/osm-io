@@ -1,5 +1,4 @@
 use chrono::{NaiveDateTime};
-use crate::error::{GenericError, OsmIoError};
 use crate::osm::apidb_dump::changeset_record::ChangesetRecord;
 use crate::osm::apidb_dump::node_record::NodeRecord;
 use crate::osm::apidb_dump::node_tag_record::NodeTagRecord;

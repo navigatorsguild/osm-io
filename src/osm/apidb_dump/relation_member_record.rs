@@ -1,4 +1,4 @@
-use crate::error::{GenericError, OsmIoError};
+use anyhow::anyhow;
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) enum RelationMemberType {
@@ -8,7 +8,7 @@ pub(crate) enum RelationMemberType {
 }
 
 impl TryFrom<&str> for RelationMemberType {
-    type Error = GenericError;
+    type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
@@ -31,7 +31,7 @@ impl TryFrom<&str> for RelationMemberType {
                 Ok(RelationMemberType::Relation)
             },
             _ => {
-                Err(OsmIoError::as_generic(format!("Unknown relation member type: {}", value)))
+                Err(anyhow!("Unknown relation member type: {}", value))
             },
         }
     }

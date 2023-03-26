@@ -4,6 +4,7 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 use std::process::exit;
 use std::str::FromStr;
+use anyhow::anyhow;
 
 use chrono::{DateTime, Utc};
 use num_format::Locale::se;
@@ -17,7 +18,6 @@ use crate::osm::apidb_dump::table_def::TableDef;
 use crate::osm::apidb_dump::table_fields::TableFields;
 use crate::osm::apidb_dump::table_record::{TableRecord};
 use crate::osm::apidb_dump::user_record::{FormatEnum, UserRecord, UserStatus};
-use crate::error::{GenericError, OsmIoError};
 use crate::osm::apidb_dump::relation_member_record::{RelationMemberRecord, RelationMemberType};
 use crate::osm::apidb_dump::relation_record::RelationRecord;
 use crate::osm::apidb_dump::relation_tag_record::RelationTagRecord;
@@ -42,7 +42,7 @@ pub(crate) struct TableReader {
 }
 
 impl TableReader {
-    pub(crate) fn new(table_def: &TableDef) -> Result<TableReader, GenericError> {
+    pub(crate) fn new(table_def: &TableDef) -> Result<TableReader, anyhow::Error> {
         Ok(
             TableReader {
                 table_def: table_def.clone(),
@@ -50,7 +50,7 @@ impl TableReader {
         )
     }
 
-    fn create_record_builder(&self) -> Result<RecordBuilder, GenericError> {
+    fn create_record_builder(&self) -> Result<RecordBuilder, anyhow::Error> {
         match self.table_def.name().as_str() {
             "public.nodes" => {
                 Ok(
@@ -133,7 +133,7 @@ impl TableReader {
                 )
             }
             _ => {
-                Err(OsmIoError::as_generic(format!("Unknown record type: {}", self.table_def.name())))
+                Err(anyhow!("Unknown record type: {}", self.table_def.name()))
             }
         }
     }
@@ -405,7 +405,7 @@ pub(crate) struct TableIterator {
 }
 
 impl TableIterator {
-    pub(crate) fn new(table_reader: &TableReader) -> Result<TableIterator, GenericError> {
+    pub(crate) fn new(table_reader: &TableReader) -> Result<TableIterator, anyhow::Error> {
         log::info!("Create iterator for {} from {:?}", table_reader.table_def.name(), table_reader.table_def.path());
         let f = File::open(&table_reader.table_def.sorted_path())?;
         let mut reader = BufReader::new(f);
@@ -418,7 +418,7 @@ impl TableIterator {
         )
     }
 
-    fn sort(path: PathBuf) -> Result<(), GenericError>{
+    fn sort(path: PathBuf) -> Result<(), anyhow::Error>{
         Ok(())
     }
 }

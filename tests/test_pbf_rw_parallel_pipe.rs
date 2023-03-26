@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::ops::{AddAssign, DerefMut};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, RwLock};
-use command_executor::errors::GenericError;
 use command_executor::executor::Command;
 use command_executor::executor::ShutdownMode;
 use command_executor::executor::ThreadPool;
@@ -43,7 +42,7 @@ impl DecodeBlobCommand {
 }
 
 impl Command for DecodeBlobCommand {
-    fn execute(&self) -> Result<(), GenericError> {
+    fn execute(&self) -> Result<(), anyhow::Error> {
         // ignore the FileBlock::Header message
         let file_block = FileBlock::from_blob_desc(&self.blob).unwrap();
         if file_block.as_osm_data().is_ok() {
@@ -75,7 +74,7 @@ impl EncodeBlobCommand {
 }
 
 impl Command for EncodeBlobCommand {
-    fn execute(&self) -> Result<(), GenericError> {
+    fn execute(&self) -> Result<(), anyhow::Error> {
         let (header, body) = FileBlock::serialize(&self.file_block, CompressionType::Zlib).unwrap();
         let metadata = self.file_block.metadata().clone();
 
@@ -121,7 +120,7 @@ impl WriteBlobsCommand {
 
 
 impl Command for WriteBlobsCommand {
-    fn execute(&self) -> Result<(), GenericError> {
+    fn execute(&self) -> Result<(), anyhow::Error> {
         ORDERING_BUFFER.with(
             |buffer| {
                 let metadata = self.metadata.lock().unwrap();

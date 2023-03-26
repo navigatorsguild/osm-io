@@ -1,5 +1,5 @@
+use anyhow::anyhow;
 use fsds::text_file::{Field, FieldType};
-use crate::error::{GenericError, OsmIoError};
 
 #[derive(Clone, Debug)]
 pub struct TablePkey {
@@ -8,7 +8,7 @@ pub struct TablePkey {
 }
 
 impl TablePkey {
-    pub fn new(name: String, fields: Vec<String>) -> Result<TablePkey, GenericError> {
+    pub fn new(name: String, fields: Vec<String>) -> Result<TablePkey, anyhow::Error> {
         let mut key = Vec::new();
         let mut error = None;
         match name.as_str() {
@@ -69,7 +69,7 @@ impl TablePkey {
                 key.push(Field::new(Self::index("id", &fields)?, FieldType::Integer).with_str_name("id"));
             }
             _ => {
-                error = Some(OsmIoError::as_generic(format!("Unknown table: {}", name)));
+                error = Some(anyhow!("Unknown table: {}", name));
             }
         }
         if error.is_some() {
@@ -84,10 +84,10 @@ impl TablePkey {
         }
     }
 
-    fn index(v: &str, fields: &Vec<String>) -> Result<usize, GenericError> {
+    fn index(v: &str, fields: &Vec<String>) -> Result<usize, anyhow::Error> {
         match fields.iter().position(|e| { *e == v.to_string() }) {
             None => {
-                Err(OsmIoError::as_generic(format!("Field not found: {}", v)))
+                Err(anyhow!("Field not found: {}", v))
             }
             Some(i) => {
                 Ok(i + 1)

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use crate::error::GenericError;
 use crate::osm::apidb_dump::table_def::TableDef;
 use crate::osm::apidb_dump::table_reader::{TableIterator, TableReader};
 use crate::osm::apidb_dump::table_record::TableRecord;
@@ -19,7 +18,7 @@ impl WayRelationsReader {
         ways_def: &TableDef,
         way_nodes_def: &TableDef,
         way_tags_def: &TableDef,
-    ) -> Result<WayRelationsReader, GenericError> {
+    ) -> Result<WayRelationsReader, anyhow::Error> {
         let ways_reader = TableReader::new(ways_def)?;
         let way_nodes_reader = TableReader::new(way_nodes_def)?;
         let way_tags_reader = TableReader::new(way_tags_def)?;
@@ -53,7 +52,7 @@ pub(crate) struct WayRelationsIterator {
 
 
 impl WayRelationsIterator {
-    pub(crate) fn new(way_relations_reader: &WayRelationsReader) -> Result<WayRelationsIterator, GenericError> {
+    pub(crate) fn new(way_relations_reader: &WayRelationsReader) -> Result<WayRelationsIterator, anyhow::Error> {
         let reader = way_relations_reader.clone();
         let ways_iterator = reader.ways_reader.clone().into_iter();
         let way_nodes_iterator = reader.way_nodes_reader.clone().into_iter();

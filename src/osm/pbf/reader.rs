@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
+use anyhow::anyhow;
 use rayon::iter::{IterBridge, ParallelBridge};
-use crate::error::{GenericError, OsmIoError};
 use crate::osm::pbf::file_info::FileInfo;
 use crate::osm::pbf::blob_iterator::BlobIterator;
 use crate::osm::pbf::element_iterator::ElementIterator;
@@ -15,7 +15,7 @@ pub struct Reader {
 }
 
 impl Reader {
-    pub fn new(path: PathBuf) -> Result<Reader, GenericError> {
+    pub fn new(path: PathBuf) -> Result<Reader, anyhow::Error> {
         let supported_features = vec![
             "OsmSchema-V0.6".to_string(),
             "DenseNodes".to_string(),
@@ -30,7 +30,7 @@ impl Reader {
         };
         let mut block_iterator = reader.clone().blocks()?;
         let file_block = block_iterator.next().ok_or(
-            OsmIoError::as_generic(format!("Failed to parse file header"))
+            anyhow!("Failed to parse file header")
         )?;
         let osm_header = file_block.as_osm_header()?;
         reader.info = osm_header.info().clone();
@@ -46,11 +46,11 @@ impl Reader {
         )
     }
 
-    pub fn blobs(&self) -> Result<BlobIterator, GenericError> {
+    pub fn blobs(&self) -> Result<BlobIterator, anyhow::Error> {
         BlobIterator::new(self.path.clone())
     }
 
-    pub fn parallel_blobs(&self) -> Result<IterBridge<BlobIterator>, GenericError> {
+    pub fn parallel_blobs(&self) -> Result<IterBridge<BlobIterator>, anyhow::Error> {
         match BlobIterator::new(self.path.clone()) {
             Ok(mut iterator) => {
                 // skip the header. doesn't make sense to include the header in parallel iteration
@@ -63,7 +63,7 @@ impl Reader {
         }
     }
 
-    pub fn blocks(&self) -> Result<FileBlockIterator, GenericError> {
+    pub fn blocks(&self) -> Result<FileBlockIterator, anyhow::Error> {
         match self.blobs() {
             Ok(blob_iterator) => {
                 Ok(
@@ -76,7 +76,7 @@ impl Reader {
         }
     }
 
-    pub fn elements(&self) -> Result<ElementIterator, GenericError> {
+    pub fn elements(&self) -> Result<ElementIterator, anyhow::Error> {
         match self.blocks() {
             Ok(file_block_iterator) => {
                 Ok(
@@ -99,13 +99,13 @@ impl Reader {
         }
     }
 
-    fn verify_supported_features(supported_features: &Vec<String>, required_features: &Vec<String>) -> Result<(), GenericError> {
+    fn verify_supported_features(supported_features: &Vec<String>, required_features: &Vec<String>) -> Result<(), anyhow::Error> {
         let missing_features = Self::find_missing_features(supported_features, required_features);
         if missing_features.is_empty() {
             Ok(())
         } else {
             Err(
-                OsmIoError::as_generic(format!("Unsupported features: {missing_features:?}"))
+                anyhow!("Unsupported features: {missing_features:?}")
             )
         }
     }

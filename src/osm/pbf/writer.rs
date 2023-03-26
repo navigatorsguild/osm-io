@@ -1,7 +1,6 @@
 use std::fs::File;
 use std::io::{Write};
 use std::path::PathBuf;
-use crate::error::GenericError;
 use crate::osm::model::bounding_box::BoundingBox;
 use crate::osm::pbf::compression_type::CompressionType;
 use crate::osm::pbf::file_block::FileBlock;
@@ -21,7 +20,7 @@ impl Writer {
         path: PathBuf,
         file_info: FileInfo,
         compression_type: CompressionType,
-    ) -> Result<Writer, GenericError> {
+    ) -> Result<Writer, anyhow::Error> {
         let file = File::create(path.clone())?;
 
         Ok(
@@ -44,7 +43,7 @@ impl Writer {
         compression_type: CompressionType,
         precomputed_bounding_box: Option<BoundingBox>,
         contains_history: bool,
-    ) -> Result<Writer, GenericError> {
+    ) -> Result<Writer, anyhow::Error> {
         let mut required_features = vec![
             "OsmSchema-V0.6".to_string(),
             "DenseNodes".to_string(),
@@ -76,7 +75,7 @@ impl Writer {
         Self::from_file_info(path, file_info, compression_type)
     }
 
-    pub fn write_header(&mut self) -> Result<(), GenericError> {
+    pub fn write_header(&mut self) -> Result<(), anyhow::Error> {
         let file_block = FileBlock::from_header(
             OsmHeader::from_file_info(self.file_info.clone())
         );
@@ -84,12 +83,12 @@ impl Writer {
         self.write(file_block)
     }
 
-    pub fn write(&mut self, file_block: FileBlock) -> Result<(), GenericError> {
+    pub fn write(&mut self, file_block: FileBlock) -> Result<(), anyhow::Error> {
         let (blob_header, blob_body) = FileBlock::serialize(&file_block, self.compression_type.clone())?;
         self.write_blob(blob_header, blob_body)
     }
 
-    pub fn write_blob(&mut self, blob_header: Vec<u8>, blob_body: Vec<u8>) -> Result<(), GenericError> {
+    pub fn write_blob(&mut self, blob_header: Vec<u8>, blob_body: Vec<u8>) -> Result<(), anyhow::Error> {
         let blob_header_len: i32 = blob_header.len() as i32;
         self.file.write(&blob_header_len.to_be_bytes())?;
         self.file.write(&blob_header)?;

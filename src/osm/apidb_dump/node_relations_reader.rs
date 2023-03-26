@@ -1,7 +1,6 @@
 use std::borrow::{Borrow, BorrowMut};
 use std::collections::HashMap;
 use crate::osm::apidb_dump::node_record::NodeRecord;
-use crate::error::GenericError;
 use crate::osm::apidb_dump::node_relation::NodeRelation;
 use crate::osm::apidb_dump::node_tag_record::NodeTagRecord;
 use crate::osm::apidb_dump::table_def::TableDef;
@@ -15,7 +14,7 @@ pub(crate) struct NodeRelationsReader {
 }
 
 impl NodeRelationsReader {
-    pub(crate) fn new(nodes_def: &TableDef, node_tags_def: &TableDef) -> Result<Self, GenericError> {
+    pub(crate) fn new(nodes_def: &TableDef, node_tags_def: &TableDef) -> Result<Self, anyhow::Error> {
         let nodes_reader = TableReader::new(nodes_def)?;
         let node_tags_reader = TableReader::new(node_tags_def)?;
         Ok(
@@ -44,7 +43,7 @@ pub(crate) struct NodeRelationsIterator {
 }
 
 impl NodeRelationsIterator {
-    pub(crate) fn new(node_relations_reader: &NodeRelationsReader) -> Result<NodeRelationsIterator, GenericError> {
+    pub(crate) fn new(node_relations_reader: &NodeRelationsReader) -> Result<NodeRelationsIterator, anyhow::Error> {
         let reader = node_relations_reader.clone();
         let nodes_iterator = reader.nodes_reader.clone().into_iter();
         let node_tags_iterator = reader.node_tags_reader.clone().into_iter();

@@ -2,7 +2,6 @@ use std::borrow::Borrow;
 use std::io::Cursor;
 use std::ops::Index;
 use prost::Message;
-use crate::error::GenericError;
 use crate::{osm, osmpbf};
 use crate::osm::model::bounding_box::BoundingBox;
 use crate::osm::model::element::Element;
@@ -22,7 +21,7 @@ pub struct OsmData {
 }
 
 impl OsmData {
-    pub fn new(index: usize, data: Vec<u8>) -> Result<OsmData, GenericError> {
+    pub fn new(index: usize, data: Vec<u8>) -> Result<OsmData, anyhow::Error> {
         let primitive_block = osmpbf::PrimitiveBlock::decode(&mut Cursor::new(data))?;
         let string_table: Vec<String> = (&primitive_block.stringtable.s).into_iter()
             .map(
@@ -315,7 +314,7 @@ impl OsmData {
         }
     }
 
-    pub fn serialize(&self) -> Result<Vec<u8>, GenericError> {
+    pub fn serialize(&self) -> Result<Vec<u8>, anyhow::Error> {
         let mut string_table_builder = StringTableBuilder::new();
         let granularity = 100_i32;
         let date_granularity = 1000_i32;

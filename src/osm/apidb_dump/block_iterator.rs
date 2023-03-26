@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::ops::AddAssign;
 use std::result;
 use prost::encoding::double::encoded_len;
-use crate::error::GenericError;
 use crate::osm::apidb_dump::apidb_dump_block::ApidbDumpBlock;
 use crate::osm::apidb_dump::element_iterator::ElementIterator;
 use crate::osm::apidb_dump::table_def::TableDef;
@@ -14,7 +13,7 @@ pub struct BlockIterator {
 }
 
 impl BlockIterator {
-    pub fn new(tables: HashMap<String, TableDef>) -> Result<BlockIterator, GenericError> {
+    pub fn new(tables: HashMap<String, TableDef>) -> Result<BlockIterator, anyhow::Error> {
         let element_iterator = ElementIterator::new(tables)?;
         Ok(
             BlockIterator { element_iterator, current_index: 0 }

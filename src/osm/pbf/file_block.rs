@@ -1,10 +1,10 @@
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
+use anyhow::anyhow;
 use flate2::bufread::ZlibDecoder;
 use flate2::Compression;
 use flate2::read::ZlibEncoder;
 use prost::Message;
-use crate::error::{GenericError, OsmIoError};
 use crate::{osm, osmpbf};
 use crate::osm::model::bounding_box::BoundingBox;
 use crate::osm::model::element::Element;
@@ -30,7 +30,7 @@ pub enum FileBlock {
 
 
 impl FileBlock {
-    pub fn new(index: usize, blob_type: String, data: Vec<u8>) -> Result<FileBlock, GenericError> {
+    pub fn new(index: usize, blob_type: String, data: Vec<u8>) -> Result<FileBlock, anyhow::Error> {
         let blob_type_str = blob_type.as_str();
         match blob_type_str {
             "OSMHeader" => {
@@ -50,7 +50,7 @@ impl FileBlock {
                 )
             }
             _ => {
-                Err(OsmIoError::as_generic(format!("Failed to decode file block")))
+                Err(anyhow!("Failed to decode file block"))
             }
         }
     }
@@ -73,25 +73,25 @@ impl FileBlock {
         }
     }
 
-    fn zlib_decode(data: Vec<u8>, raw_size: usize) -> Result<Vec<u8>, GenericError> {
+    fn zlib_decode(data: Vec<u8>, raw_size: usize) -> Result<Vec<u8>, anyhow::Error> {
         let mut decoder = ZlibDecoder::new(data.as_slice());
         let mut decoded = vec![0_u8; raw_size];
         decoder.read_exact(&mut decoded)?;
         Ok(decoded)
     }
 
-    fn zlib_encode(buf: Vec<u8>, compression_level: Compression) -> Result<Vec<u8>, GenericError> {
+    fn zlib_encode(buf: Vec<u8>, compression_level: Compression) -> Result<Vec<u8>, anyhow::Error> {
         let mut encoder = ZlibEncoder::new(buf.as_slice(), compression_level);
         let mut encoded = Vec::<u8>::new();
         encoder.read_to_end(&mut encoded)?;
         Ok(encoded)
     }
 
-    pub fn read_blob_data(blob: osmpbf::Blob) -> Result<Vec<u8>, GenericError> {
+    pub fn read_blob_data(blob: osmpbf::Blob) -> Result<Vec<u8>, anyhow::Error> {
         match blob.data {
             None => {
                 Err(
-                    OsmIoError::as_generic(format!("Input file too short"))
+                    anyhow!("Input file too short")
                 )
             }
             Some(data) => {
@@ -99,7 +99,7 @@ impl FileBlock {
                     Data::Raw(_) => {
                         Err(
                             // TODO:
-                            OsmIoError::as_generic(format!("Raw data type not implemented"))
+                            anyhow!("Raw data type not implemented")
                         )
                     }
                     Data::ZlibData(zlib_data) => {
@@ -109,23 +109,23 @@ impl FileBlock {
                     Data::LzmaData(_) => {
                         Err(
                             // TODO:
-                            OsmIoError::as_generic(format!("Lzma data type not implemented"))
+                            anyhow!("Lzma data type not implemented")
                         )
                     }
                     Data::ObsoleteBzip2Data(_) => {
                         Err(
-                            OsmIoError::as_generic(format!("Obsolete Bzip data type not implemented"))
+                            anyhow!("Obsolete Bzip data type not implemented")
                         )
                     }
                     Data::Lz4Data(_) => {
                         Err(
                             // TODO:
-                            OsmIoError::as_generic(format!("Lz4 data type not implemented"))
+                            anyhow!("Lz4 data type not implemented")
                         )
                     }
                     Data::ZstdData(_) => {
                         Err(
-                            OsmIoError::as_generic(format!("Zstd data type not implemented"))
+                            anyhow!("Zstd data type not implemented")
                         )
                     }
                 }
@@ -134,7 +134,7 @@ impl FileBlock {
     }
 
 
-    pub fn from_blob_desc(blob_desc: &osm::pbf::blob_desc::BlobDesc) -> Result<FileBlock, GenericError> {
+    pub fn from_blob_desc(blob_desc: &osm::pbf::blob_desc::BlobDesc) -> Result<FileBlock, anyhow::Error> {
         let mut file = File::open(blob_desc.path()).expect(
             format!("Failed to open {:?} for reading", blob_desc.path()).as_str()
         );
@@ -148,7 +148,7 @@ impl FileBlock {
         Self::deserialize(blob_desc, &mut blob_buffer)
     }
 
-    pub fn serialize(file_block: &FileBlock, compression: CompressionType) -> Result<(Vec<u8>, Vec<u8>), GenericError> {
+    pub fn serialize(file_block: &FileBlock, compression: CompressionType) -> Result<(Vec<u8>, Vec<u8>), anyhow::Error> {
         let (blob_type, compression_level, block_data) = match file_block {
             FileBlock::Header { metadata: _, header } => {
                 ("OSMHeader".to_string(), Compression::none(), header.serialize().unwrap())
@@ -193,7 +193,7 @@ impl FileBlock {
         Ok((header, body))
     }
 
-    fn deserialize(blob_desc: &BlobDesc, blob_buffer: &mut Vec<u8>) -> Result<FileBlock, GenericError> {
+    fn deserialize(blob_desc: &BlobDesc, blob_buffer: &mut Vec<u8>) -> Result<FileBlock, anyhow::Error> {
         // use BlobDesc rather than BlobHeader to skip reading again the blob header
         let protobuf_blob = osmpbf::Blob::decode(&mut Cursor::new(blob_buffer)).expect(
             format!("Failed to decode a message from blob {} from {:?}", blob_desc.index(), blob_desc.path()).as_str()
@@ -213,13 +213,13 @@ impl FileBlock {
         }
     }
 
-    pub fn as_osm_header(&self) -> Result<&OsmHeader, GenericError> {
+    pub fn as_osm_header(&self) -> Result<&OsmHeader, anyhow::Error> {
         match self {
             FileBlock::Header { header, .. } => {
                 Ok(header)
             }
             FileBlock::Data { .. } => {
-                Err(OsmIoError::as_generic(format!("Not an OSMHeader")))
+                Err(anyhow!("Not an OSMHeader"))
             }
         }
     }
@@ -238,10 +238,10 @@ pub fn is_osm_header(&self) -> bool {
         !self.is_osm_header()
     }
 
-    pub fn as_osm_data(&self) -> Result<&OsmData, GenericError> {
+    pub fn as_osm_data(&self) -> Result<&OsmData, anyhow::Error> {
         match self {
             FileBlock::Header { .. } => {
-                Err(OsmIoError::as_generic(format!("Not an OSMData")))
+                Err(anyhow!("Not an OSMData"))
             }
             FileBlock::Data { data, .. } => {
                 Ok(data)

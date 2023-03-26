@@ -1,6 +1,5 @@
+use anyhow::anyhow;
 use chrono::NaiveDateTime;
-use crate::error::GenericError;
-use crate::error::OsmIoError;
 
 #[derive(Debug)]
 pub(crate) enum UserStatus {
@@ -12,7 +11,7 @@ pub(crate) enum UserStatus {
 }
 
 impl TryFrom<&str> for UserStatus {
-    type Error = GenericError;
+    type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
@@ -32,7 +31,7 @@ impl TryFrom<&str> for UserStatus {
                 Ok(UserStatus::Deleted)
             }
             _ => {
-                Err(OsmIoError::as_generic(format!("Unknown user status: {}", value)))
+                Err(anyhow!("Unknown user status: {}", value))
             }
         }
     }
@@ -46,7 +45,7 @@ pub(crate) enum FormatEnum {
 }
 
 impl TryFrom<&str> for FormatEnum {
-    type Error = GenericError;
+    type Error = anyhow::Error;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
@@ -60,7 +59,7 @@ impl TryFrom<&str> for FormatEnum {
                 Ok(FormatEnum::Text)
             }
             _ => {
-                Err(OsmIoError::as_generic(format!("Unknown format: {}", value)))
+                Err(anyhow!("Unknown format: {}", value))
             }
         }
     }

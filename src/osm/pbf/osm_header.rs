@@ -1,6 +1,5 @@
 use std::io::Cursor;
 use prost::Message;
-use crate::error::{GenericError};
 use crate::osm::model::bounding_box::BoundingBox;
 use crate::osm::pbf::file_info::FileInfo;
 use crate::osmpbf;
@@ -13,7 +12,7 @@ pub struct OsmHeader {
 static NANODEG: f64 = 1_000_000_000_f64;
 
 impl OsmHeader {
-    pub fn new(data: Vec<u8>) -> Result<OsmHeader, GenericError> {
+    pub fn new(data: Vec<u8>) -> Result<OsmHeader, anyhow::Error> {
         let header_block = osmpbf::HeaderBlock::decode(&mut Cursor::new(data))?;
         let mut bounding_box = None;
         if let Some(bbox) = header_block.bbox {
@@ -77,7 +76,7 @@ impl OsmHeader {
         }
     }
 
-    pub fn serialize(&self) -> Result<Vec<u8>, GenericError> {
+    pub fn serialize(&self) -> Result<Vec<u8>, anyhow::Error> {
         let header_block = osmpbf::HeaderBlock {
             bbox: self.to_header_bbox(),
             required_features: self.info.required_features().clone(),
