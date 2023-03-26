@@ -78,15 +78,17 @@ impl Iterator for RelationRelationsIterator {
 
     // TODO: use member sequence
     fn next(&mut self) -> Option<Self::Item> {
+        // ADD CONSTRAINT relation_members_id_fkey FOREIGN KEY (relation_id, version) REFERENCES public.relations(relation_id, version);
+        // ADD CONSTRAINT relation_tags_id_fkey FOREIGN KEY (relation_id, version) REFERENCES public.relations(relation_id, version);
         if let Some(relation) = self.relations_iterator.next() {
             if let TableRecord::Relation { relation_record } = relation {
                 let mut current_relation_tags = Vec::<RelationTagRecord>::new();
                 if let Some(relation_tag_record) = self.next_relation_tag_record.take() {
-                    if relation_tag_record.relation_id() == relation_record.relation_id() {
+                    if relation_tag_record.relation_id() == relation_record.relation_id() && relation_tag_record.version() == relation_record.version() {
                         current_relation_tags.push(relation_tag_record);
                         while let Some(relation_tag) = self.relation_tags_iterator.next() {
                             if let TableRecord::RelationTag { relation_tag_record } = relation_tag {
-                                if relation_tag_record.relation_id() == relation_record.relation_id() {
+                                if relation_tag_record.relation_id() == relation_record.relation_id() && relation_tag_record.version() == relation_record.version() {
                                     current_relation_tags.push(relation_tag_record)
                                 } else {
                                     self.next_relation_tag_record = Some(relation_tag_record);
@@ -102,7 +104,7 @@ impl Iterator for RelationRelationsIterator {
                 } else {
                     for relation_tag in self.relation_tags_iterator.by_ref() {
                         if let TableRecord::RelationTag { relation_tag_record } = relation_tag {
-                            if relation_tag_record.relation_id() == relation_record.relation_id() {
+                            if relation_tag_record.relation_id() == relation_record.relation_id() && relation_tag_record.version() == relation_record.version() {
                                 current_relation_tags.push(relation_tag_record)
                             } else {
                                 self.next_relation_tag_record = Some(relation_tag_record);
@@ -120,7 +122,7 @@ impl Iterator for RelationRelationsIterator {
                         current_relation_members.push(relation_member_record);
                         while let Some(relation_member) = self.relation_members_iterator.next() {
                             if let TableRecord::RelationMember { relation_member_record } = relation_member {
-                                if relation_member_record.relation_id() == relation_record.relation_id() {
+                                if relation_member_record.relation_id() == relation_record.relation_id() && relation_member_record.version() == relation_record.version() {
                                     current_relation_members.push(relation_member_record)
                                 } else {
                                     self.next_relation_member_record = Some(relation_member_record);
@@ -136,7 +138,7 @@ impl Iterator for RelationRelationsIterator {
                 } else {
                     for relation_member in self.relation_members_iterator.by_ref() {
                         if let TableRecord::RelationMember { relation_member_record } = relation_member {
-                            if relation_member_record.relation_id() == relation_record.relation_id() {
+                            if relation_member_record.relation_id() == relation_record.relation_id() && relation_member_record.version() == relation_record.version() {
                                 current_relation_members.push(relation_member_record)
                             } else {
                                 self.next_relation_member_record = Some(relation_member_record);

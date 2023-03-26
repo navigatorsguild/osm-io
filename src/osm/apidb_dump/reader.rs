@@ -10,19 +10,21 @@ use crate::osm::apidb_dump::table_def::TableDef;
 
 pub struct Reader {
     input_path: PathBuf,
+    tmp_path: PathBuf,
     tables: HashMap<String, TableDef>,
 }
 
 impl Reader {
-    pub fn new(input_path: PathBuf) -> Result<Reader, GenericError> {
+    pub fn new(input_path: PathBuf, tmp_path: PathBuf) -> Result<Reader, GenericError> {
         let mut tables: HashMap<String, TableDef> = HashMap::new();
 
         let toc_path = input_path.join("toc.dat");
         let toc = fs::read(toc_path)?;
         let raw_table_defs = Self::get_table_def_strings(&toc);
+        // COPY public.node_tags (node_id, version, k, v) FROM stdin
         let re = Regex::new("^([^ ]+) \\((.+)\\)$").unwrap();
         for raw_table_def in raw_table_defs {
-            let path_ = input_path.join(&raw_table_def.1);
+            let table_data_path = input_path.join(&raw_table_def.1);
             let captures = re.captures(&raw_table_def.0).unwrap();
             let name = captures.get(1).unwrap().as_str();
             let fields: Vec<&str> = captures.get(2).unwrap().as_str().split(", ").collect();
@@ -30,7 +32,8 @@ impl Reader {
                 name.to_string(),
                 TableDef::new(
                     name.to_string(),
-                    path_,
+                    table_data_path,
+                    tmp_path.clone(),
                     fields.iter().map(|e| {
                         e.to_string()
                     }
@@ -42,12 +45,15 @@ impl Reader {
         Ok(
             Reader {
                 input_path,
+                tmp_path,
                 tables,
             }
         )
     }
 
     fn get_table_def_strings(toc: &Vec<u8>) -> Vec<(String, String)> {
+
+        // COPY public.node_tags (node_id, version, k, v) FROM stdin;......3838.dat
         let mut result: Vec<(String, String)> = Vec::new();
         let copy = "COPY ".as_bytes();
         let from_stdin = " FROM stdin".as_bytes();

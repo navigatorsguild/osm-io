@@ -75,6 +75,9 @@ impl Iterator for WayRelationsIterator {
     type Item = WayRelation;
 
     fn next(&mut self) -> Option<Self::Item> {
+        // ADD CONSTRAINT way_nodes_id_fkey FOREIGN KEY (way_id, version) REFERENCES public.ways(way_id, version);
+        // ADD CONSTRAINT way_tags_id_fkey FOREIGN KEY (way_id, version) REFERENCES public.ways(way_id, version);
+
         if let Some(way) = self.ways_iterator.next() {
             if let TableRecord::Way { way_record } = way {
                 let mut current_way_tags = Vec::<WayTagRecord>::new();
@@ -83,7 +86,7 @@ impl Iterator for WayRelationsIterator {
                         current_way_tags.push(way_tag_record);
                         while let Some(way_tag) = self.way_tags_iterator.next() {
                             if let TableRecord::WayTag { way_tag_record } = way_tag {
-                                if way_tag_record.way_id() == way_record.way_id() {
+                                if way_tag_record.way_id() == way_record.way_id() && way_tag_record.version() == way_record.version() {
                                     current_way_tags.push(way_tag_record)
                                 } else {
                                     self.next_way_tag_record = Some(way_tag_record);
@@ -99,7 +102,7 @@ impl Iterator for WayRelationsIterator {
                 } else {
                     for way_tag in self.way_tags_iterator.by_ref() {
                         if let TableRecord::WayTag { way_tag_record } = way_tag {
-                            if way_tag_record.way_id() == way_record.way_id() {
+                            if way_tag_record.way_id() == way_record.way_id() && way_tag_record.version() == way_record.version() {
                                 current_way_tags.push(way_tag_record)
                             } else {
                                 self.next_way_tag_record = Some(way_tag_record);
@@ -113,11 +116,11 @@ impl Iterator for WayRelationsIterator {
 
                 let mut current_way_nodes = Vec::<WayNodeRecord>::new();
                 if let Some(way_node_record) = self.next_way_node_record.take() {
-                    if way_node_record.way_id() == way_record.way_id() {
+                    if way_node_record.way_id() == way_record.way_id() && way_node_record.version() == way_record.version() {
                         current_way_nodes.push(way_node_record);
                         while let Some(way_node) = self.way_nodes_iterator.next() {
                             if let TableRecord::WayNode { way_node_record } = way_node {
-                                if way_node_record.way_id() == way_record.way_id() {
+                                if way_node_record.way_id() == way_record.way_id() && way_node_record.version() == way_record.version() {
                                     current_way_nodes.push(way_node_record)
                                 } else {
                                     self.next_way_node_record = Some(way_node_record);
@@ -133,7 +136,7 @@ impl Iterator for WayRelationsIterator {
                 } else {
                     for way_node in self.way_nodes_iterator.by_ref() {
                         if let TableRecord::WayNode { way_node_record } = way_node {
-                            if way_node_record.way_id() == way_record.way_id() {
+                            if way_node_record.way_id() == way_record.way_id() && way_node_record.version() == way_record.version() {
                                 current_way_nodes.push(way_node_record)
                             } else {
                                 self.next_way_node_record = Some(way_node_record);

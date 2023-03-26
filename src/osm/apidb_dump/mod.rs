@@ -4,6 +4,7 @@ pub(crate) mod apidb_dump_block;
 pub mod block_iterator;
 pub mod table_def;
 pub mod table_fields;
+pub mod table_pkey;
 pub mod element_iterator;
 pub mod table_record;
 pub mod table_reader;

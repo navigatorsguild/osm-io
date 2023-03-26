@@ -18,7 +18,11 @@ transient-btree-index = "0.5"
 regex = "1.7"
 postgres = "0.19"
 num-format = "0.4"
+num_cpus = "1.15"
 command-executor = { path = "../command-executor" }
+fsds = { path = "../fsds" }
+rand = "0.8.5"
+data-encoding = "2.3.3"
 
 
 [build-dependencies]

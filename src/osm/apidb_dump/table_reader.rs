@@ -407,7 +407,7 @@ pub(crate) struct TableIterator {
 impl TableIterator {
     pub(crate) fn new(table_reader: &TableReader) -> Result<TableIterator, GenericError> {
         log::info!("Create iterator for {} from {:?}", table_reader.table_def.name(), table_reader.table_def.path());
-        let f = File::open(&table_reader.table_def.path())?;
+        let f = File::open(&table_reader.table_def.sorted_path())?;
         let mut reader = BufReader::new(f);
         let record_builder = table_reader.create_record_builder()?;
         Ok(
@@ -416,6 +416,10 @@ impl TableIterator {
                 record_builder,
             }
         )
+    }
+
+    fn sort(path: PathBuf) -> Result<(), GenericError>{
+        Ok(())
     }
 }
 

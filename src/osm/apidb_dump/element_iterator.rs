@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::fs::read;
 use std::hash::Hash;
 use std::path::Iter;
+use fsds::text_file::Sort;
+use regex::Regex;
 use transient_btree_index::{BtreeConfig, BtreeIndex};
 use crate::error::{GenericError, OsmIoError};
 use crate::osm::apidb_dump::node_relation::NodeRelation;
@@ -41,6 +43,7 @@ pub struct ElementIterator {
 
 impl ElementIterator {
     pub fn new(tables: HashMap<String, TableDef>) -> Result<ElementIterator, GenericError> {
+        Self::sort_tables(&tables)?;
         let user_index = Self::index_users(&tables)?;
         let changeset_user_index = Self::index_changesets(&tables)?;
         let node_relations_reader = NodeRelationsReader::new(
@@ -62,7 +65,6 @@ impl ElementIterator {
             tables.get("public.relation_tags").unwrap(),
         )?;
         let relation_relations_iterator = relation_relations_reader.into_iter();
-
 
         Ok(
             ElementIterator {
@@ -101,6 +103,25 @@ impl ElementIterator {
             }
         }
         Ok(user_index)
+    }
+
+    fn sort_tables(tables: &HashMap<String, TableDef>) -> Result<(), GenericError> {
+        for (table_name, table_def) in tables {
+            std::fs::create_dir_all(table_def.tmp_path())?;
+            println!("table: {table_name}");
+            println!("{:?}", table_def.path());
+            let mut text_file = Sort::new();
+            text_file.add_input(table_def.path());
+            text_file.set_output(table_def.sorted_path());
+            text_file.set_tmp_dir(table_def.tmp_path());
+            text_file.set_intermediate_files(4096);
+            text_file.set_tasks(num_cpus::get());
+            text_file.set_fields(table_def.pkey().key());
+            text_file.set_ignore_lines(Regex::new("^\\\\")?);
+            println!("{:?}", table_def.pkey().key());
+            text_file.sort()?;
+        }
+        Ok(())
     }
 }
 
@@ -238,6 +259,7 @@ impl Iterator for ElementIterator {
                 }
             }
             IterationState::End => {
+                // remove sorted files
                 None
             }
         }

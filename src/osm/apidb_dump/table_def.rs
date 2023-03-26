@@ -1,21 +1,39 @@
+use std::fmt::format;
 use std::path::PathBuf;
+use num_format::Locale::pa;
 
 use crate::error::GenericError;
 use crate::osm::apidb_dump::table_fields::TableFields;
+use crate::osm::apidb_dump::table_pkey::TablePkey;
 
 #[derive(Debug, Clone)]
 pub struct TableDef {
     name: String,
     path: PathBuf,
+    sorted_path: PathBuf,
+    tmp_path: PathBuf,
     fields: TableFields,
+    pkey: TablePkey,
 }
 
 impl TableDef {
-    pub fn new(name: String, path: PathBuf, fields: Vec<String>) -> Result<TableDef, GenericError> {
+    fn build_sorted_path(name: String, mut path: PathBuf) -> PathBuf {
+        path.push(PathBuf::from(format!("sorted-{}.dat", name)));
+        path
+    }
+
+    fn input_dir(path: PathBuf) -> PathBuf {
+        PathBuf::from(path.parent().unwrap())
+    }
+
+    pub fn new(name: String, path: PathBuf, tmp_path: PathBuf, fields: Vec<String>) -> Result<TableDef, GenericError> {
         let table_def = TableDef {
             name: name.clone(),
-            path,
-            fields: TableFields::new(name.clone(), fields)?,
+            path: path.clone(),
+            sorted_path: Self::build_sorted_path(name.clone(), tmp_path.clone()),
+            tmp_path,
+            fields: TableFields::new(name.clone(), fields.clone())?,
+            pkey: TablePkey::new(name.clone(), fields.clone())?,
         };
         Ok(table_def)
     }
@@ -28,7 +46,19 @@ impl TableDef {
         self.path.clone()
     }
 
+    pub fn sorted_path(&self) -> PathBuf{
+        self.sorted_path.clone()
+    }
+
+    pub fn tmp_path(&self) -> PathBuf{
+        self.tmp_path.clone()
+    }
+
     pub fn fields(&self) -> TableFields {
         self.fields.clone()
+    }
+
+    pub fn pkey(&self) -> TablePkey {
+        self.pkey.clone()
     }
 }

@@ -14,10 +14,14 @@ fn test_apidb_dump_reader_pbf_writer_pipe() {
     common::setup();
     let input_path = PathBuf::from("./tests/fixtures/malta-230109-modified-history");
     let output_path = PathBuf::from("./tests/results/malta-230109-modified-history.osm.pbf");
-    let fixture_analysis_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf.osm.pbf.analysis.json");
+    let tmp_path = PathBuf::from("./tests/results/malta-230109-modified-history");
+    // the malta-230109-modified-history.osm.pbf.analysis.json was created from test results because
+    // for now there is no way to import into DB a complete history from PBF..
+    // TODO: rewrite the test when history import is available
+    let fixture_analysis_path = PathBuf::from("./tests/fixtures/malta-230109-modified-history.osm.pbf.analysis.json");
 
 
-    let reader = Reader::new(input_path).unwrap();
+    let reader = Reader::new(input_path, tmp_path).unwrap();
     let info = FileInfo::new(
         None,
         ["OsmSchema-V0.6", "DenseNodes"].map(|s| s.to_string()).to_vec(),
@@ -40,7 +44,7 @@ fn test_apidb_dump_reader_pbf_writer_pipe() {
         writer.write(block.into()).expect("failed to write a file block");
     }
 
-    // common::analyze_pbf_output(output_path, fixture_analysis_path);
+    common::analyze_pbf_output(output_path, fixture_analysis_path);
 
     // TODO: test with history file, check elements in db relations are matched by version and ID
 
