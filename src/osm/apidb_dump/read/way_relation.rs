@@ -1,6 +1,6 @@
-use crate::osm::apidb_dump::way_node_record::WayNodeRecord;
-use crate::osm::apidb_dump::way_record::WayRecord;
-use crate::osm::apidb_dump::way_tag_record::WayTagRecord;
+use crate::osm::apidb_dump::read::way_node_record::WayNodeRecord;
+use crate::osm::apidb_dump::read::way_record::WayRecord;
+use crate::osm::apidb_dump::read::way_tag_record::WayTagRecord;
 
 #[derive(Debug)]
 pub(crate) struct WayRelation{

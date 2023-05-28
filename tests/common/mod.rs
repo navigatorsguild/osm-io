@@ -10,6 +10,7 @@ use reqwest::Url;
 use osm_io::osm::pbf::reader::Reader;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
+use anyhow::Context;
 use osm_io::osm::model::element::Element;
 use osm_io::osm::pbf::file_block::FileBlock;
 use rayon::iter::ParallelIterator;
@@ -17,8 +18,8 @@ use rayon::iter::ParallelIterator;
 pub fn setup() {
     let fixture_link = Url::from_str("http://download.geofabrik.de/australia-oceania/niue-230225.osm.pbf").unwrap();
     let fixture_dir_path = PathBuf::from_str("./tests/fixtures/").unwrap();
-    let results_dir_path = PathBuf::from_str("./tests/results/").unwrap();
-    let parallel_results_dir_path = PathBuf::from_str("./tests/parallel-results/").unwrap();
+    let results_dir_path = PathBuf::from_str("./target/results/").unwrap();
+    let parallel_results_dir_path = PathBuf::from_str("./target/results/").unwrap();
     let fixture_file_path = fixture_dir_path.join("niue-230225-geofabrik.osm.pbf");
     if !fixture_file_path.exists() {
         println!("Downloading fixture file: {} -> {:?}", fixture_link, fixture_file_path);
@@ -61,7 +62,9 @@ pub fn setup() {
 }
 
 pub fn read_fixture_analysis(path: &PathBuf) -> JsonValue {
-    let fixture_analysis_string = fs::read_to_string(path).expect("Failed to read fixture analysis file");
+    let fixture_analysis_string = fs::read_to_string(path)
+        .with_context(|| format!("path: {}", path.to_string_lossy()))
+        .expect("Failed to read fixture analysis file");
 
     let fixture_analysis = json::parse(fixture_analysis_string.as_str()).unwrap();
     fixture_analysis

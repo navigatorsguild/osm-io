@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use crate::osm::model::coordinate::Coordinate;
 
 #[derive(Debug, Default, Clone)]
@@ -68,5 +69,11 @@ impl BoundingBox {
 
     pub fn bottom(&self) -> f64 {
         self.bottom
+    }
+}
+
+impl Display for BoundingBox {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "left: {}, bottom: {}, right: {}, top: {}", self.left, self.bottom, self.right, self.top)
     }
 }

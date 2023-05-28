@@ -1,6 +1,6 @@
-use crate::osm::apidb_dump::relation_member_record::RelationMemberRecord;
-use crate::osm::apidb_dump::relation_record::RelationRecord;
-use crate::osm::apidb_dump::relation_tag_record::RelationTagRecord;
+use crate::osm::apidb_dump::read::relation_member_record::RelationMemberRecord;
+use crate::osm::apidb_dump::read::relation_record::RelationRecord;
+use crate::osm::apidb_dump::read::relation_tag_record::RelationTagRecord;
 
 #[derive(Debug)]
 pub(crate) struct RelationRelation{

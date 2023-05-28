@@ -1,6 +1,6 @@
 use crate::osm::model::tag::Tag;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Way {
     id: i64,
     version: i32,
@@ -54,6 +54,10 @@ impl Way {
         &self.user
     }
 
+    pub fn take_user(&mut self) -> String {
+        std::mem::take(&mut self.user)
+    }
+
     pub fn visible(&self) -> bool {
         self.visible
     }
@@ -64,5 +68,9 @@ impl Way {
 
     pub fn tags(&self) -> &Vec<Tag> {
         &self.tags
+    }
+
+    pub fn take_tags(&mut self) -> Vec<Tag> {
+        std::mem::take(&mut self.tags)
     }
 }

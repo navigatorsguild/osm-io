@@ -55,6 +55,13 @@ impl FileBlock {
         }
     }
 
+    pub fn from_elements(index: usize, elements: Vec<Element>) -> FileBlock {
+        FileBlock::Data {
+            metadata: FileBlockMetadata::new("OSMData".to_string(), index),
+            data: OsmData::from_elements(index, elements, None),
+        }
+    }
+
     pub fn compute_bounding_box(&self) -> Option<BoundingBox> {
         match self {
             FileBlock::Header { metadata: _, header } => {
@@ -253,7 +260,7 @@ pub fn is_osm_header(&self) -> bool {
         self.as_osm_data().unwrap().elements()
     }
 
-    pub fn release_elements(&mut self) -> Vec<Element> {
+    pub fn take_elements(&mut self) -> Vec<Element> {
         match self {
             FileBlock::Header { .. } => {
                 panic!("Not a Data variant")

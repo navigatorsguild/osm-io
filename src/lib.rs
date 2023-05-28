@@ -5,4 +5,3 @@ pub(crate) mod osmpbf {
 }
 
 pub mod osm;
-pub mod reporting;

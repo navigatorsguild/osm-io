@@ -1,5 +1,6 @@
 use anyhow::anyhow;
-use fsds::text_file::{Field, FieldType};
+use text_file_sort::field::Field;
+use text_file_sort::field_type::FieldType;
 
 #[derive(Clone, Debug)]
 pub struct TablePkey {

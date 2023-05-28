@@ -2,8 +2,8 @@ use std::fmt::format;
 use std::path::PathBuf;
 use num_format::Locale::pa;
 
-use crate::osm::apidb_dump::table_fields::TableFields;
-use crate::osm::apidb_dump::table_pkey::TablePkey;
+use crate::osm::apidb_dump::read::table_fields::TableFields;
+use crate::osm::apidb_dump::read::table_pkey::TablePkey;
 
 #[derive(Debug, Clone)]
 pub struct TableDef {

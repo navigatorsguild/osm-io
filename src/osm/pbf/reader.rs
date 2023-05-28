@@ -1,11 +1,17 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
+use std::sync::Arc;
 use anyhow::anyhow;
+use command_executor::shutdown_mode::ShutdownMode;
+use command_executor::thread_pool_builder::ThreadPoolBuilder;
+use num_format::Locale::ta;
 use rayon::iter::{IterBridge, ParallelBridge};
+use crate::osm::model::element::Element;
 use crate::osm::pbf::file_info::FileInfo;
 use crate::osm::pbf::blob_iterator::BlobIterator;
 use crate::osm::pbf::element_iterator::ElementIterator;
 use crate::osm::pbf::file_block_iterator::FileBlockIterator;
+use crate::osm::pbf::parallel_element_iteration_command::ParallelElementIterationCommand;
 
 #[derive(Debug, Clone)]
 pub struct Reader {
@@ -67,7 +73,7 @@ impl Reader {
         match self.blobs() {
             Ok(blob_iterator) => {
                 Ok(
-                   FileBlockIterator::new(blob_iterator)
+                    FileBlockIterator::new(blob_iterator)
                 )
             }
             Err(e) => {
@@ -80,13 +86,36 @@ impl Reader {
         match self.blocks() {
             Ok(file_block_iterator) => {
                 Ok(
-                   ElementIterator::new(file_block_iterator)
+                    ElementIterator::new(file_block_iterator)
                 )
             }
             Err(e) => {
                 Err(e)
             }
         }
+    }
+
+    pub fn parallel_for_each(&self, tasks: usize, f: impl Fn(Element) -> Result<(), anyhow::Error> + Send + Sync + 'static) -> Result<(), anyhow::Error> {
+        let mut iteration_pool = ThreadPoolBuilder::new()
+            .with_tasks(tasks)
+            .with_queue_size(1024)
+            .with_shutdown_mode(ShutdownMode::CompletePending)
+            .with_name_str("parallel-element-iterator")
+            .build()?;
+
+        let f_wrapper = Arc::new(f);
+        for blob_desc in self.blobs()? {
+            let f_wrapper_clone = f_wrapper.clone();
+            iteration_pool.submit(
+                Box::new(
+                    ParallelElementIterationCommand::new(blob_desc, f_wrapper_clone)
+                )
+            );
+        }
+
+        iteration_pool.shutdown();
+        iteration_pool.join()?;
+        Ok(())
     }
 
     fn find_missing_features(supported_features: &Vec<String>, required_features: &Vec<String>) -> Vec<String> {

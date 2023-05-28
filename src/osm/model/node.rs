@@ -1,7 +1,7 @@
 use crate::osm::model::coordinate::Coordinate;
 use crate::osm::model::tag::Tag;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Node {
     id: i64,
     version: i32,
@@ -57,11 +57,19 @@ impl Node {
         &self.user
     }
 
+    pub fn take_user(&mut self) -> String {
+        std::mem::take(&mut self.user)
+    }
+
     pub fn visible(&self) -> bool {
         self.visible.clone()
     }
 
     pub fn tags(&self) -> &Vec<Tag> {
         &self.tags
+    }
+
+    pub fn take_tags(&mut self) -> Vec<Tag> {
+        std::mem::take(&mut self.tags)
     }
 }

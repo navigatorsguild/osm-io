@@ -1,5 +1,6 @@
 pub mod reader;
 pub mod writer;
+pub mod parallel_writer;
 pub mod osm_data;
 pub mod osm_header;
 pub mod element_iterator;
@@ -14,3 +15,6 @@ pub(crate) mod dense_group_builder;
 pub(crate) mod string_table_builder;
 pub(crate) mod ways_group_builder;
 pub(crate) mod relations_group_builder;
+pub(crate) mod parallel_element_iteration_command;
+pub mod thread_local_accumulator;
+pub(crate) mod element_accumulator;

@@ -1,11 +1,11 @@
 use std::borrow::{Borrow, BorrowMut};
 use std::collections::HashMap;
-use crate::osm::apidb_dump::node_record::NodeRecord;
-use crate::osm::apidb_dump::node_relation::NodeRelation;
-use crate::osm::apidb_dump::node_tag_record::NodeTagRecord;
-use crate::osm::apidb_dump::table_def::TableDef;
-use crate::osm::apidb_dump::table_reader::{TableIterator, TableReader};
-use crate::osm::apidb_dump::table_record::TableRecord;
+use crate::osm::apidb_dump::read::node_record::NodeRecord;
+use crate::osm::apidb_dump::read::node_relation::NodeRelation;
+use crate::osm::apidb_dump::read::node_tag_record::NodeTagRecord;
+use crate::osm::apidb_dump::read::table_def::TableDef;
+use crate::osm::apidb_dump::read::table_reader::{TableIterator, TableReader};
+use crate::osm::apidb_dump::read::table_record::TableRecord;
 
 #[derive(Clone)]
 pub(crate) struct NodeRelationsReader {

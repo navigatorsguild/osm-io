@@ -1,5 +1,5 @@
-use crate::osm::apidb_dump::node_record::NodeRecord;
-use crate::osm::apidb_dump::node_tag_record::NodeTagRecord;
+use crate::osm::apidb_dump::read::node_record::NodeRecord;
+use crate::osm::apidb_dump::read::node_tag_record::NodeTagRecord;
 use crate::osm::model::node::Node;
 
 #[derive(Debug)]

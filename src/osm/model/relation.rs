@@ -1,6 +1,6 @@
 use crate::osm::model::tag::Tag;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MemberData {
     id: i64,
     role: String,
@@ -22,7 +22,7 @@ impl MemberData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Member {
     Node {
         member: MemberData,
@@ -35,7 +35,7 @@ pub enum Member {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Relation {
     id: i64,
     version: i32,
@@ -87,6 +87,10 @@ impl Relation {
         &self.user
     }
 
+    pub fn take_user(&mut self) -> String {
+        std::mem::take(&mut self.user)
+    }
+
     pub fn visible(&self) -> bool {
         self.visible
     }
@@ -97,5 +101,9 @@ impl Relation {
 
     pub fn tags(&self) -> &Vec<Tag> {
         &self.tags
+    }
+
+    pub fn take_tags(&mut self) -> Vec<Tag> {
+        std::mem::take(&mut self.tags)
     }
 }

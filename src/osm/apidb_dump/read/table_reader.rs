@@ -10,20 +10,20 @@ use chrono::{DateTime, Utc};
 use num_format::Locale::se;
 use postgres::types::IsNull::No;
 
-use crate::osm::apidb_dump::changeset_record::ChangesetRecord;
-use crate::osm::apidb_dump::node_record::NodeRecord;
-use crate::osm::apidb_dump::node_tag_record::NodeTagRecord;
+use crate::osm::apidb_dump::read::changeset_record::ChangesetRecord;
+use crate::osm::apidb_dump::read::node_record::NodeRecord;
+use crate::osm::apidb_dump::read::node_tag_record::NodeTagRecord;
 use crate::osm::apidb_dump::sql::{parse_sql_bool, parse_sql_null_string, parse_sql_time};
-use crate::osm::apidb_dump::table_def::TableDef;
-use crate::osm::apidb_dump::table_fields::TableFields;
-use crate::osm::apidb_dump::table_record::{TableRecord};
-use crate::osm::apidb_dump::user_record::{FormatEnum, UserRecord, UserStatus};
-use crate::osm::apidb_dump::relation_member_record::{RelationMemberRecord, RelationMemberType};
-use crate::osm::apidb_dump::relation_record::RelationRecord;
-use crate::osm::apidb_dump::relation_tag_record::RelationTagRecord;
-use crate::osm::apidb_dump::way_node_record::WayNodeRecord;
-use crate::osm::apidb_dump::way_record::WayRecord;
-use crate::osm::apidb_dump::way_tag_record::WayTagRecord;
+use crate::osm::apidb_dump::read::table_def::TableDef;
+use crate::osm::apidb_dump::read::table_fields::TableFields;
+use crate::osm::apidb_dump::read::table_record::{TableRecord};
+use crate::osm::apidb_dump::read::user_record::{FormatEnum, UserRecord, UserStatus};
+use crate::osm::apidb_dump::read::relation_member_record::{RelationMemberRecord, RelationMemberType};
+use crate::osm::apidb_dump::read::relation_record::RelationRecord;
+use crate::osm::apidb_dump::read::relation_tag_record::RelationTagRecord;
+use crate::osm::apidb_dump::read::way_node_record::WayNodeRecord;
+use crate::osm::apidb_dump::read::way_record::WayRecord;
+use crate::osm::apidb_dump::read::way_tag_record::WayTagRecord;
 
 struct RecordBuilder {
     f: fn(&String, &TableFields) -> Option<TableRecord>,
@@ -408,7 +408,7 @@ impl TableIterator {
     pub(crate) fn new(table_reader: &TableReader) -> Result<TableIterator, anyhow::Error> {
         log::info!("Create iterator for {} from {:?}", table_reader.table_def.name(), table_reader.table_def.path());
         let f = File::open(&table_reader.table_def.sorted_path())?;
-        let mut reader = BufReader::new(f);
+        let reader = BufReader::new(f);
         let record_builder = table_reader.create_record_builder()?;
         Ok(
             TableIterator {

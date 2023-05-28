@@ -3,18 +3,18 @@ use std::fs::read;
 use std::hash::Hash;
 use std::path::Iter;
 use anyhow::anyhow;
-use fsds::text_file::Sort;
+use text_file_sort::sort::Sort;
 use regex::Regex;
 use transient_btree_index::{BtreeConfig, BtreeIndex};
-use crate::osm::apidb_dump::node_relation::NodeRelation;
-use crate::osm::apidb_dump::node_relations_reader::{NodeRelationsIterator, NodeRelationsReader};
-use crate::osm::apidb_dump::relation_member_record::RelationMemberType;
-use crate::osm::apidb_dump::relation_relations_reader::{RelationRelationsIterator, RelationRelationsReader};
-use crate::osm::apidb_dump::table_def::TableDef;
-use crate::osm::apidb_dump::table_reader;
-use crate::osm::apidb_dump::table_reader::TableReader;
-use crate::osm::apidb_dump::table_record::TableRecord;
-use crate::osm::apidb_dump::way_relations_reader::{WayRelationsIterator, WayRelationsReader};
+use crate::osm::apidb_dump::read::node_relation::NodeRelation;
+use crate::osm::apidb_dump::read::node_relations_reader::{NodeRelationsIterator, NodeRelationsReader};
+use crate::osm::apidb_dump::read::relation_member_record::RelationMemberType;
+use crate::osm::apidb_dump::read::relation_relations_reader::{RelationRelationsIterator, RelationRelationsReader};
+use crate::osm::apidb_dump::read::table_def::TableDef;
+use crate::osm::apidb_dump::read::table_reader;
+use crate::osm::apidb_dump::read::table_reader::TableReader;
+use crate::osm::apidb_dump::read::table_record::TableRecord;
+use crate::osm::apidb_dump::read::way_relations_reader::{WayRelationsIterator, WayRelationsReader};
 use crate::osm::model::coordinate::Coordinate;
 use crate::osm::model::element::Element;
 use crate::osm::model::node::Node;
@@ -110,14 +110,13 @@ impl ElementIterator {
             std::fs::create_dir_all(table_def.tmp_path())?;
             println!("table: {table_name}");
             println!("{:?}", table_def.path());
-            let mut text_file = Sort::new();
-            text_file.add_input(table_def.path());
-            text_file.set_output(table_def.sorted_path());
-            text_file.set_tmp_dir(table_def.tmp_path());
-            text_file.set_intermediate_files(4096);
-            text_file.set_tasks(num_cpus::get());
-            text_file.set_fields(table_def.pkey().key());
-            text_file.set_ignore_lines(Regex::new("^\\\\")?);
+            let mut text_file = Sort::new(vec![table_def.path()], table_def.sorted_path());
+            text_file.with_tmp_dir(table_def.tmp_path());
+            text_file.with_intermediate_files(4096);
+            text_file.with_tasks(num_cpus::get());
+            text_file.with_fields(table_def.pkey().key());
+            text_file.with_ignore_empty();
+            text_file.with_ignore_lines(Regex::new("^\\\\\\.$")?);
             println!("{:?}", table_def.pkey().key());
             text_file.sort()?;
         }
@@ -192,7 +191,7 @@ impl Iterator for ElementIterator {
                                     user,
                                     w.way().visible(),
                                     w.take_way_nodes().into_iter().map(
-                                        |mut way_node_record| {
+                                        |way_node_record| {
                                             way_node_record.node_id()
                                         }
                                     ).collect(),

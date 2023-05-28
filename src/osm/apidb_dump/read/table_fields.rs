@@ -1,7 +1,5 @@
 use anyhow::anyhow;
-// use std::borrow::Borrow;
-// use std::ops::Index;
-use crate::osm::apidb_dump::table_fields::TableFields::{Changesets, NodeTags, RelationMembers, Relations, RelationTags, Users, WayNodes, Ways, WayTags,};
+use crate::osm::apidb_dump::read::table_fields::TableFields::{Changesets, NodeTags, RelationMembers, Relations, RelationTags, Users, WayNodes, Ways, WayTags,};
 
 #[derive(Debug, Copy, Clone)]
 pub enum TableFields {

@@ -2,21 +2,21 @@ use std::ops::AddAssign;
 use std::path::PathBuf;
 use std::sync::{Arc};
 use std::sync::atomic::{AtomicI64, Ordering};
-use command_executor::executor::Command;
-use command_executor::executor::ShutdownMode;
-use command_executor::executor::ThreadPoolBuilder;
+use benchmark_rs::stopwatch::StopWatch;
+use command_executor::command::Command;
+use command_executor::shutdown_mode::ShutdownMode;
+use command_executor::thread_pool_builder::ThreadPoolBuilder;
 use simple_logger::SimpleLogger;
 use osm_io::osm::model::element::Element;
 use osm_io::osm::pbf::file_block::FileBlock;
 use osm_io::osm::pbf::reader::Reader;
-use osm_io::reporting::stopwatch::StopWatch;
 use rayon::iter::ParallelIterator;
 use osm_io::osm::pbf::blob_desc::BlobDesc;
 
 pub fn main() {
     SimpleLogger::new().init().unwrap();
     log::info!("Start profiling");
-    let input_path = PathBuf::from("./tests/fixtures/germany-230109.osm.pbf");
+    let input_path = PathBuf::from("fixtures/germany-230109.osm.pbf");
     prof_rayon_reader(input_path.clone());
     prof_reader(input_path.clone());
     prof_command_executor_reader(input_path.clone());
@@ -155,10 +155,10 @@ fn prof_command_executor_reader(input_path: PathBuf) {
     let atomic_relations = Arc::new(AtomicI64::new(0));
 
     let mut element_counter_pool = ThreadPoolBuilder::new()
-        .tasks(8)
-        .queue_size(64)
-        .name("pbf-block-decoder".to_string())
-        .shutdown_mode(ShutdownMode::CompletePending)
+        .with_tasks(8)
+        .with_queue_size(64)
+        .with_name("pbf-block-decoder".to_string())
+        .with_shutdown_mode(ShutdownMode::CompletePending)
         .build()
         .unwrap();
 

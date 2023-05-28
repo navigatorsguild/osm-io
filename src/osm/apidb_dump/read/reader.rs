@@ -4,8 +4,8 @@ use std::ops::{AddAssign, SubAssign};
 use std::path::PathBuf;
 use regex::Regex;
 use transient_btree_index::{BtreeConfig, BtreeIndex};
-use crate::osm::apidb_dump::block_iterator::BlockIterator;
-use crate::osm::apidb_dump::table_def::TableDef;
+use crate::osm::apidb_dump::read::block_iterator::BlockIterator;
+use crate::osm::apidb_dump::read::table_def::TableDef;
 
 pub struct Reader {
     input_path: PathBuf,

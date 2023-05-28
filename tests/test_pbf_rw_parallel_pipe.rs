@@ -2,18 +2,18 @@ use std::collections::HashMap;
 use std::ops::{AddAssign, DerefMut};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex, RwLock};
-use command_executor::executor::Command;
-use command_executor::executor::ShutdownMode;
-use command_executor::executor::ThreadPool;
-use command_executor::executor::ThreadPoolBuilder;
 use simple_logger::SimpleLogger;
 use osm_io::osm::pbf;
 use osm_io::osm::pbf::blob_desc::BlobDesc;
 use osm_io::osm::pbf::compression_type::CompressionType;
 use osm_io::osm::pbf::file_block::FileBlock;
 use osm_io::osm::pbf::file_block_metadata::FileBlockMetadata;
-use osm_io::reporting::stopwatch::StopWatch;
 use std::cell::{RefCell};
+use benchmark_rs::stopwatch::StopWatch;
+use command_executor::command::Command;
+use command_executor::shutdown_mode::ShutdownMode;
+use command_executor::thread_pool::ThreadPool;
+use command_executor::thread_pool_builder::ThreadPoolBuilder;
 use osm_io::osm::pbf::file_info::FileInfo;
 use osm_io::osm::pbf::writer::Writer;
 
@@ -178,7 +178,7 @@ fn test_pbf_rw_parallel_pipe() {
     common::setup();
     log::info!("Started OSM PBF rw parallel pipe test");
     let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
-    let output_path = PathBuf::from("./tests/parallel-results/malta-230109.osm.pbf");
+    let output_path = PathBuf::from("./tests/results/malta-230109.osm.pbf");
     let fixture_analysis_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf.osm.pbf.analysis.json");
 
     let reader = pbf::reader::Reader::new(input_path.clone()).unwrap();
@@ -193,10 +193,10 @@ fn test_pbf_rw_parallel_pipe() {
     let pbf_block_decoder_pool = Arc::new(
         RwLock::new(
             ThreadPoolBuilder::new()
-                .tasks(8)
-                .queue_size(64)
-                .name("pbf-block-decoder".to_string())
-                .shutdown_mode(ShutdownMode::CompletePending)
+                .with_tasks(8)
+                .with_queue_size(64)
+                .with_name("pbf-block-decoder".to_string())
+                .with_shutdown_mode(ShutdownMode::CompletePending)
                 .build()
                 .unwrap()
         )
@@ -205,10 +205,10 @@ fn test_pbf_rw_parallel_pipe() {
     let pbf_block_encoder_pool = Arc::new(
         RwLock::new(
             ThreadPoolBuilder::new()
-                .tasks(8)
-                .queue_size(64)
-                .name("pbf-block-encoder".to_string())
-                .shutdown_mode(ShutdownMode::CompletePending)
+                .with_tasks(8)
+                .with_queue_size(64)
+                .with_name("pbf-block-encoder".to_string())
+                .with_shutdown_mode(ShutdownMode::CompletePending)
                 .build()
                 .unwrap()
         )
@@ -217,10 +217,10 @@ fn test_pbf_rw_parallel_pipe() {
     let pbf_block_writer_pool = Arc::new(
         RwLock::new(
             ThreadPoolBuilder::new()
-                .tasks(1)
-                .queue_size(1024)
-                .name("pbf-block-writer".to_string())
-                .shutdown_mode(ShutdownMode::CompletePending)
+                .with_tasks(1)
+                .with_queue_size(1024)
+                .with_name("pbf-block-writer".to_string())
+                .with_shutdown_mode(ShutdownMode::CompletePending)
                 .build()
                 .unwrap()
         )
@@ -250,7 +250,7 @@ fn test_pbf_rw_parallel_pipe() {
 
 fn init_writer(writer_thread_pool: Arc<RwLock<ThreadPool>>, output_path: PathBuf, info: FileInfo, compression_type: CompressionType) {
     let tp = writer_thread_pool.read().unwrap();
-    tp.in_all_threads(
+    tp.in_all_threads_mut(
         Arc::new(
             Mutex::new(
                 move || {
@@ -281,7 +281,7 @@ fn shutdown(thread_pool: Arc<RwLock<ThreadPool>>) {
 
 fn set_next(target: Arc<RwLock<ThreadPool>>, next: Arc<RwLock<ThreadPool>>) {
     let t = target.read().unwrap();
-    t.in_all_threads(
+    t.in_all_threads_mut(
         Arc::new(
             Mutex::new(
                 move || {

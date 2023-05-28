@@ -1,9 +1,9 @@
 use std::path::PathBuf;
+use benchmark_rs::stopwatch::StopWatch;
 use simple_logger::SimpleLogger;
 use osm_io::osm::pbf::compression_type::CompressionType;
 use osm_io::osm::pbf::reader::Reader;
 use osm_io::osm::pbf::writer::Writer;
-use osm_io::reporting::stopwatch::StopWatch;
 
 mod common;
 
@@ -36,7 +36,7 @@ fn test_pbf_rw_pipe() {
     // skip incoming header
     let _ = block_iterator.next();
     while let Some(file_block) = block_iterator.next() {
-        writer.write(file_block).expect("failed to write a file block");
+        writer.write_file_block(file_block).expect("failed to write a file block");
     }
 
     common::analyze_pbf_output(output_path, fixture_analysis_path);

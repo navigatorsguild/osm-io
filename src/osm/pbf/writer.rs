@@ -1,10 +1,16 @@
 use std::fs::File;
 use std::io::{Write};
+use std::ops::Div;
 use std::path::PathBuf;
+use anyhow::{anyhow, Context};
 use crate::osm::model::bounding_box::BoundingBox;
+use crate::osm::model::element::Element;
 use crate::osm::pbf::compression_type::CompressionType;
+use crate::osm::pbf::element_accumulator::ElementAccumulator;
 use crate::osm::pbf::file_block::FileBlock;
+use crate::osm::pbf::file_block_metadata::FileBlockMetadata;
 use crate::osm::pbf::file_info::FileInfo;
+use crate::osm::pbf::osm_data::OsmData;
 use crate::osm::pbf::osm_header::OsmHeader;
 
 pub struct Writer {
@@ -12,6 +18,7 @@ pub struct Writer {
     file_info: FileInfo,
     compression_type: CompressionType,
     file: File,
+    element_accumulator: ElementAccumulator,
 }
 
 // TODO: create with a builder or add a configuration parameter or get a Fileinfo as paramter
@@ -21,14 +28,15 @@ impl Writer {
         file_info: FileInfo,
         compression_type: CompressionType,
     ) -> Result<Writer, anyhow::Error> {
-        let file = File::create(path.clone())?;
-
+        let file = File::create(path.clone())
+            .with_context(|| anyhow!("path: {}", path.to_string_lossy()))?;
         Ok(
             Writer {
                 path: path.clone(),
                 file_info,
                 compression_type,
                 file,
+                element_accumulator: ElementAccumulator::new(),
             }
         )
     }
@@ -80,10 +88,10 @@ impl Writer {
             OsmHeader::from_file_info(self.file_info.clone())
         );
 
-        self.write(file_block)
+        self.write_file_block(file_block)
     }
 
-    pub fn write(&mut self, file_block: FileBlock) -> Result<(), anyhow::Error> {
+    pub fn write_file_block(&mut self, file_block: FileBlock) -> Result<(), anyhow::Error> {
         let (blob_header, blob_body) = FileBlock::serialize(&file_block, self.compression_type.clone())?;
         self.write_blob(blob_header, blob_body)
     }
@@ -97,6 +105,39 @@ impl Writer {
         Ok(())
     }
 
+    pub fn write_element(&mut self, element: Element) -> Result<(), anyhow::Error> {
+        let elements = self.element_accumulator.add(element);
+        match elements {
+            None => {}
+            Some(elements) => {
+                self.write_elements(elements)?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn write_elements(&mut self, elements: Vec<Element>) -> Result<(), anyhow::Error> {
+        let index = self.element_accumulator.index();
+        let data = FileBlock::Data {
+            metadata: FileBlockMetadata::new(
+                "OSMData".to_string(),
+                index,
+            ),
+            data: OsmData::from_elements(index, elements, None),
+        };
+        self.write_file_block(data)?;
+        Ok(())
+    }
+
+    pub fn flush(&mut self) -> Result<(), anyhow::Error> {
+        let elements = self.element_accumulator.elements();
+        if elements.len() > 0 {
+            self.write_elements(elements)?;
+        }
+        Ok(())
+    }
+
+    // TODO: remove
     pub fn add_bounding_box(&mut self, bounding_box: Option<BoundingBox>) {
         self.file_info.merge_bounding_box(bounding_box);
     }

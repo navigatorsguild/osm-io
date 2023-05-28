@@ -1,10 +1,10 @@
 use std::collections::HashMap;
-use crate::osm::apidb_dump::table_def::TableDef;
-use crate::osm::apidb_dump::table_reader::{TableIterator, TableReader};
-use crate::osm::apidb_dump::table_record::TableRecord;
-use crate::osm::apidb_dump::way_node_record::WayNodeRecord;
-use crate::osm::apidb_dump::way_relation::WayRelation;
-use crate::osm::apidb_dump::way_tag_record::WayTagRecord;
+use crate::osm::apidb_dump::read::table_def::TableDef;
+use crate::osm::apidb_dump::read::table_reader::{TableIterator, TableReader};
+use crate::osm::apidb_dump::read::table_record::TableRecord;
+use crate::osm::apidb_dump::read::way_node_record::WayNodeRecord;
+use crate::osm::apidb_dump::read::way_relation::WayRelation;
+use crate::osm::apidb_dump::read::way_tag_record::WayTagRecord;
 
 #[derive(Clone)]
 pub(crate) struct WayRelationsReader {
