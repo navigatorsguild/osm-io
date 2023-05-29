@@ -1,26 +1,22 @@
 use std::path::PathBuf;
-use std::ptr::write;
-use std::sync::{Arc, Mutex};
-use std::thread;
 use anyhow;
-use num_format::Locale::or;
-use rand::thread_rng;
 use osm_io::osm::model::element::Element;
 use osm_io::osm::pbf;
 use osm_io::osm::pbf::compression_type::CompressionType;
-use osm_io::osm::pbf::element_iterator::ElementIterator;
-use osm_io::osm::pbf::parallel_writer::ParallelWriter;
-use osm_io::osm::pbf::thread_local_accumulator::ThreadLocalAccumulator;
+use osm_io::osm::pbf::file_info::FileInfo;
 
 pub fn main() -> Result<(), anyhow::Error> {
-    // let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
-    // let output_path = PathBuf::from("./target/results/malta-230109.osm.pbf");
-    let input_path = PathBuf::from("./tests/fixtures/germany-230109.osm.pbf");
-    let output_path = PathBuf::from("./target/results/germany-230109.osm.pbf");
+    let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
+    let output_path = PathBuf::from("./target/results/malta-230109.osm.pbf");
+    // let input_path = PathBuf::from("./tests/fixtures/germany-230109.osm.pbf");
+    // let output_path = PathBuf::from("./target/results/germany-230109.osm.pbf");
     let reader = pbf::reader::Reader::new(input_path)?;
+    // let mut file_info = reader.info().clone();
+    let mut file_info = FileInfo::default();
+    file_info.with_writingprogram_str("pbf-io-example");
     let mut writer = pbf::writer::Writer::from_file_info(
         output_path,
-        reader.info().clone(),
+        file_info,
         CompressionType::Zlib,
     )?;
 
@@ -30,16 +26,16 @@ pub fn main() -> Result<(), anyhow::Error> {
         let mut filter_out = false;
         match &element {
             Element::Node { node } => {
-                // for tag in node.tags() {
-                //     if tag.k() == "natural" && tag.v() == "tree" {
-                //         filter_out = true;
-                //         break;
-                //     }
-                // }
+                for tag in node.tags() {
+                    if tag.k() == "natural" && tag.v() == "tree" {
+                        filter_out = true;
+                        break;
+                    }
+                }
             }
-            Element::Way { way } => {
+            Element::Way { way: _ } => {
             }
-            Element::Relation { relation } => {
+            Element::Relation { relation: _ } => {
             }
             Element::Sentinel => {
                 filter_out = true;

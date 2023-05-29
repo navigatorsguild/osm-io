@@ -1,6 +1,6 @@
 use crate::osm::model::bounding_box::BoundingBox;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct FileInfo {
     bounding_box: Option<BoundingBox>,
     required_features: Vec<String>,
@@ -11,7 +11,6 @@ pub struct FileInfo {
     osmosis_replication_sequence_number: Option<i64>,
     osmosis_replication_base_url: Option<String>,
 }
-
 
 impl FileInfo {
     pub fn new(
@@ -46,67 +45,86 @@ impl FileInfo {
         }
     }
 
-    pub fn bounding_box(&self) -> &Option<BoundingBox>{
+    pub fn bounding_box(&self) -> &Option<BoundingBox> {
         &self.bounding_box
     }
 
-    pub fn set_bounding_box(&mut self, bounding_box: &Option<BoundingBox>) {
+    pub fn with_bounding_box(&mut self, bounding_box: &Option<BoundingBox>) {
         self.bounding_box = bounding_box.clone();
     }
 
-    pub fn required_features(&self) -> &Vec<String>{
+    pub fn required_features(&self) -> &Vec<String> {
         &self.required_features
     }
 
-    pub fn set_required_features(&mut self, required_features: &Vec<String>) {
+    pub fn with_required_features(&mut self, required_features: &Vec<String>) {
         self.required_features = required_features.clone();
     }
 
-    pub fn optional_features(&self) -> &Vec<String>{
+    pub fn optional_features(&self) -> &Vec<String> {
         &self.optional_features
     }
 
-    pub fn set_optional_features(&mut self, optional_features: &Vec<String>) {
+    pub fn with_optional_features(&mut self, optional_features: &Vec<String>) {
         self.optional_features = optional_features.clone();
     }
 
-    pub fn writingprogram(&self) -> &Option<String>{
+    pub fn writingprogram(&self) -> &Option<String> {
         &self.writingprogram
     }
 
-    pub fn set_writingprogram(&mut self, writingprogram: &Option<String>) {
+    pub fn with_writingprogram(&mut self, writingprogram: &Option<String>) {
         self.writingprogram = writingprogram.clone();
     }
 
-    pub fn source(&self) -> &Option<String>{
+    pub fn with_writingprogram_str(&mut self, writingprogram: &str) {
+        self.writingprogram = Some(writingprogram.to_string())
+    }
+
+    pub fn source(&self) -> &Option<String> {
         &self.source
     }
 
-    pub fn set_source(&mut self, source: &Option<String>) {
+    pub fn with_source(&mut self, source: &Option<String>) {
         self.source = source.clone();
     }
 
-    pub fn osmosis_replication_timestamp(&self) -> &Option<i64>{
+    pub fn osmosis_replication_timestamp(&self) -> &Option<i64> {
         &self.osmosis_replication_timestamp
     }
 
-    pub fn set_osmosis_replication_timestamp(&mut self, osmosis_replication_timestamp: &Option<i64>) {
+    pub fn with_osmosis_replication_timestamp(&mut self, osmosis_replication_timestamp: &Option<i64>) {
         self.osmosis_replication_timestamp = osmosis_replication_timestamp.clone();
     }
 
-    pub fn osmosis_replication_sequence_number(&self) -> &Option<i64>{
+    pub fn osmosis_replication_sequence_number(&self) -> &Option<i64> {
         &self.osmosis_replication_sequence_number
     }
 
-    pub fn set_osmosis_replication_sequence_number(&mut self, osmosis_replication_sequence_number: &Option<i64>) {
+    pub fn with_osmosis_replication_sequence_number(&mut self, osmosis_replication_sequence_number: &Option<i64>) {
         self.osmosis_replication_sequence_number = osmosis_replication_sequence_number.clone();
     }
 
-    pub fn osmosis_replication_base_url(&self) -> &Option<String>{
+    pub fn osmosis_replication_base_url(&self) -> &Option<String> {
         &self.osmosis_replication_base_url
     }
 
-    pub fn set_osmosis_replication_base_url(&mut self, osmosis_replication_base_url: &Option<String>) {
+    pub fn with_osmosis_replication_base_url(&mut self, osmosis_replication_base_url: &Option<String>) {
         self.osmosis_replication_base_url = osmosis_replication_base_url.clone();
+    }
+}
+
+impl Default for FileInfo {
+    fn default() -> Self {
+        FileInfo::new(
+            None,
+            ["OsmSchema-V0.6", "DenseNodes"].map(|s| s.to_string()).to_vec(),
+            ["Sort.Type_then_ID"].map(|s| s.to_string()).to_vec(),
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
     }
 }

@@ -56,7 +56,7 @@ impl Reader {
         BlobIterator::new(self.path.clone())
     }
 
-    pub fn parallel_blobs(&self) -> Result<IterBridge<BlobIterator>, anyhow::Error> {
+    pub(crate) fn parallel_blobs(&self) -> Result<IterBridge<BlobIterator>, anyhow::Error> {
         match BlobIterator::new(self.path.clone()) {
             Ok(mut iterator) => {
                 // skip the header. doesn't make sense to include the header in parallel iteration

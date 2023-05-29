@@ -40,8 +40,8 @@ pub fn main() -> Result<(), anyhow::Error> {
                 println!("Sentinel");
             }
         }
-        OK(())
-    }
+        Ok(())
+    },
     )?;
 
     println!("nodes: {}", nodes_clone.load(Ordering::Relaxed));

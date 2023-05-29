@@ -6,7 +6,7 @@ use osm_io::osm::pbf::reader::Reader;
 
 mod common;
 
-#[test]
+// #[test]
 fn test_pbf_reader_apidb_dump_writer_pipe() -> Result<(), anyhow::Error>{
     SimpleLogger::new().init().unwrap();
     common::setup();

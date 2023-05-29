@@ -24,7 +24,7 @@ use crate::osm::pbf::file_info::FileInfo;
 use crate::osm::pbf::writer::Writer;
 
 thread_local! {
-    static ELEMENT_ORDERING_BUFFER: RefCell<Vec<Element>> = RefCell::new(Vec::new());
+    static ELEMENT_ORDERING_BUFFER: RefCell<VecDeque<Element>> = RefCell::new(VecDeque::new());
     static ELEMENT_ORDERING_BUFFER_SIZE: RefCell<usize> = RefCell::new(0);
     static FILE_BLOCK_SIZE: RefCell<usize> = RefCell::new(0);
     static FILE_BLOCK_INDEX: RefCell<usize> = RefCell::new(1);
@@ -40,7 +40,7 @@ thread_local! {
 
 fn flush_sorted_top() {
     ELEMENT_ORDERING_BUFFER.with(|element_ordering_buffer| {
-        element_ordering_buffer.borrow_mut().sort_by(|a, b| b.cmp(a));
+        element_ordering_buffer.borrow_mut().make_contiguous().sort();
         let mut elements = split_file_block(element_ordering_buffer);
         set_current_min_element(elements.get(0));
         NEXT_THREAD_POOL.with(|thread_pool| {
@@ -54,7 +54,7 @@ fn flush_sorted_top() {
 
 fn flush_all_sorted() {
     ELEMENT_ORDERING_BUFFER.with(|element_ordering_buffer| {
-        element_ordering_buffer.borrow_mut().sort_by(|a, b| b.cmp(a));
+        element_ordering_buffer.borrow_mut().make_contiguous().sort();
         while element_ordering_buffer.borrow().len() > 0 {
             let mut elements = split_file_block(element_ordering_buffer);
             set_current_min_element(elements.get(0));
@@ -68,10 +68,10 @@ fn flush_all_sorted() {
     });
 }
 
-fn split_file_block(element_ordering_buffer: &RefCell<Vec<Element>>) -> Vec<Element> {
+fn split_file_block(element_ordering_buffer: &RefCell<VecDeque<Element>>) -> Vec<Element> {
     let mut elements = Vec::with_capacity(file_block_size());
     for i in 0..file_block_size() {
-        let element = element_ordering_buffer.borrow_mut().pop();
+        let element = element_ordering_buffer.borrow_mut().pop_front();
         match element {
             None => {
                 break;
@@ -82,7 +82,7 @@ fn split_file_block(element_ordering_buffer: &RefCell<Vec<Element>>) -> Vec<Elem
                 } else if Element::same_type(&e, &elements[0]) {
                     elements.push(e);
                 } else {
-                    element_ordering_buffer.borrow_mut().push(e);
+                    element_ordering_buffer.borrow_mut().push_front(e);
                     break;
                 }
             }
@@ -163,7 +163,7 @@ impl Command for AddElementCommand {
         ELEMENT_ORDERING_BUFFER.with(|element_ordering_buffer| {
             let mut element_guard = self.element.lock().unwrap();
             assert_order(element_guard.as_ref().unwrap());
-            element_ordering_buffer.borrow_mut().push(element_guard.take().unwrap());
+            element_ordering_buffer.borrow_mut().push_back(element_guard.take().unwrap());
             if element_ordering_buffer.borrow().len() > element_ordering_buffer_size() {
                 flush_sorted_top()
             }
@@ -190,7 +190,7 @@ impl Command for AddElementsCommand {
             let mut elements_guard = self.elements.lock().unwrap();
             for element in elements_guard.take().unwrap() {
                 assert_order(&element);
-                element_ordering_buffer.borrow_mut().push(element);
+                element_ordering_buffer.borrow_mut().push_back(element);
             }
             if element_ordering_buffer.borrow().len() > element_ordering_buffer_size() {
                 flush_sorted_top();

@@ -1,36 +1,31 @@
 use std::path::PathBuf;
-use std::ptr::write;
 use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::SystemTime;
 use anyhow;
-use num_format::Locale::{or, pa};
-use rand::thread_rng;
 use osm_io::osm::model::element::Element;
 use osm_io::osm::pbf;
 use osm_io::osm::pbf::compression_type::CompressionType;
-use osm_io::osm::pbf::element_iterator::ElementIterator;
-use osm_io::osm::pbf::parallel_writer::ParallelWriter;
 use osm_io::osm::pbf::thread_local_accumulator::ThreadLocalAccumulator;
 
 pub fn main() -> Result<(), anyhow::Error> {
-    // let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
-    // let output_path = PathBuf::from("./target/results/parallel-malta-230109.osm.pbf");
-    let input_path = PathBuf::from("./tests/fixtures/germany-230109.osm.pbf");
-    let output_path = PathBuf::from("./target/results/parallel-germany-230109.osm.pbf");
+    let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
+    let output_path = PathBuf::from("./target/results/parallel-malta-230109.osm.pbf");
+    // let input_path = PathBuf::from("./tests/fixtures/germany-230109.osm.pbf");
+    // let output_path = PathBuf::from("./target/results/parallel-germany-230109.osm.pbf");
     let reader = pbf::reader::Reader::new(input_path)?;
-    let mut parallel_writer = Arc::new(
+    let mut file_info = reader.info().clone();
+    file_info.with_writingprogram_str("parallel-pbf-io-example");
+    let parallel_writer = Arc::new(
         Mutex::new(
             pbf::parallel_writer::ParallelWriter::from_file_info(
-                4 * 8000 * 16,
+                4 * 8000 * 32,
                 8000,
                 output_path,
-                reader.info().clone(),
+                file_info,
                 CompressionType::Zlib,
             )?
         )
     );
-    let mut parallel_writer_clone = parallel_writer.clone();
+    let parallel_writer_clone = parallel_writer.clone();
 
     let tl_acc = ThreadLocalAccumulator::new(8000);
 
@@ -43,16 +38,16 @@ pub fn main() -> Result<(), anyhow::Error> {
         let mut filter_out = false;
         match &element {
             Element::Node { node } => {
-                // for tag in node.tags() {
-                //     if tag.k() == "natural" && tag.v() == "tree" {
-                //         filter_out = true;
-                //         break;
-                //     }
-                // }
+                for tag in node.tags() {
+                    if tag.k() == "natural" && tag.v() == "tree" {
+                        filter_out = true;
+                        break;
+                    }
+                }
             }
-            Element::Way { way } => {
+            Element::Way { way: _ } => {
             }
-            Element::Relation { relation } => {
+            Element::Relation { relation: _ } => {
             }
             Element::Sentinel => {
                 filter_out = true;

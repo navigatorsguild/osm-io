@@ -22,35 +22,103 @@ impl Element {
         match e1 {
             Element::Node { .. } => {
                 match e2 {
-                    Element::Node { .. } => {true}
-                    Element::Way { .. } => {false}
-                    Element::Relation { .. } => {false}
-                    Element::Sentinel => {false}
+                    Element::Node { .. } => { true }
+                    Element::Way { .. } => { false }
+                    Element::Relation { .. } => { false }
+                    Element::Sentinel => { false }
                 }
             }
             Element::Way { .. } => {
                 match e2 {
-                    Element::Node { .. } => {false}
-                    Element::Way { .. } => {true}
-                    Element::Relation { .. } => {false}
-                    Element::Sentinel => {false}
+                    Element::Node { .. } => { false }
+                    Element::Way { .. } => { true }
+                    Element::Relation { .. } => { false }
+                    Element::Sentinel => { false }
                 }
             }
             Element::Relation { .. } => {
                 match e2 {
-                    Element::Node { .. } => {false}
-                    Element::Way { .. } => {false}
-                    Element::Relation { .. } => {true}
-                    Element::Sentinel => {false}
+                    Element::Node { .. } => { false }
+                    Element::Way { .. } => { false }
+                    Element::Relation { .. } => { true }
+                    Element::Sentinel => { false }
                 }
             }
             Element::Sentinel => {
                 match e2 {
-                    Element::Node { .. } => {false}
-                    Element::Way { .. } => {false}
-                    Element::Relation { .. } => {false}
-                    Element::Sentinel => {true}
+                    Element::Node { .. } => { false }
+                    Element::Way { .. } => { false }
+                    Element::Relation { .. } => { false }
+                    Element::Sentinel => { true }
                 }
+            }
+        }
+    }
+
+    pub fn is_node(&self) -> bool {
+        match self {
+            Element::Node { .. } => {
+                true
+            }
+            Element::Way { .. } => {
+                false
+            }
+            Element::Relation { .. } => {
+                false
+            }
+            Element::Sentinel => {
+                false
+            }
+        }
+    }
+
+    pub fn is_way(&self) -> bool {
+        match self {
+            Element::Node { .. } => {
+                false
+            }
+            Element::Way { .. } => {
+                true
+            }
+            Element::Relation { .. } => {
+                false
+            }
+            Element::Sentinel => {
+                false
+            }
+        }
+    }
+
+    pub fn is_relation(&self) -> bool {
+        match self {
+            Element::Node { .. } => {
+                false
+            }
+            Element::Way { .. } => {
+                false
+            }
+            Element::Relation { .. } => {
+                true
+            }
+            Element::Sentinel => {
+                false
+            }
+        }
+    }
+
+    pub fn is_sentinel(&self) -> bool {
+        match self {
+            Element::Node { .. } => {
+                false
+            }
+            Element::Way { .. } => {
+                false
+            }
+            Element::Relation { .. } => {
+                false
+            }
+            Element::Sentinel => {
+                true
             }
         }
     }

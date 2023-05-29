@@ -12,8 +12,6 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 use anyhow::Context;
 use osm_io::osm::model::element::Element;
-use osm_io::osm::pbf::file_block::FileBlock;
-use rayon::iter::ParallelIterator;
 
 pub fn setup() {
     let fixture_link = Url::from_str("http://download.geofabrik.de/australia-oceania/niue-230225.osm.pbf").unwrap();
@@ -74,11 +72,14 @@ pub fn analyze_pbf_output(output_path: PathBuf, fixture_analysis_path: PathBuf) 
     let fixture_analysis = read_fixture_analysis(&fixture_analysis_path);
     let test_reader = Reader::new(output_path).unwrap();
     let atomic_nodes = Arc::new(AtomicI64::new(0));
+    let atomic_nodes_clone = atomic_nodes.clone();
     let atomic_ways = Arc::new(AtomicI64::new(0));
+    let atomic_ways_clone = atomic_ways.clone();
     let atomic_relations = Arc::new(AtomicI64::new(0));
-    test_reader.parallel_blobs().unwrap().for_each(
-        |blob_desc| {
-            for element in FileBlock::from_blob_desc(&blob_desc).unwrap().elements() {
+    let atomic_relations_clone = atomic_relations.clone();
+    test_reader.parallel_for_each(
+        4,
+        move |element| {
                 match element {
                     Element::Node { node: _ } => {
                         atomic_nodes.fetch_add(1, Ordering::Relaxed);
@@ -91,10 +92,10 @@ pub fn analyze_pbf_output(output_path: PathBuf, fixture_analysis_path: PathBuf) 
                     }
                     Element::Sentinel => {}
                 }
-            }
+            Ok(())
         }
-    );
-    assert_eq!(atomic_nodes.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["nodes"].as_i64().unwrap());
-    assert_eq!(atomic_ways.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["ways"].as_i64().unwrap());
-    assert_eq!(atomic_relations.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["relations"].as_i64().unwrap());
+    ).unwrap();
+    assert_eq!(atomic_nodes_clone.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["nodes"].as_i64().unwrap());
+    assert_eq!(atomic_ways_clone.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["ways"].as_i64().unwrap());
+    assert_eq!(atomic_relations_clone.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["relations"].as_i64().unwrap());
 }
