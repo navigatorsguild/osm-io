@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 use std::ops::AddAssign;
-use std::result;
-use prost::encoding::double::encoded_len;
 use crate::osm::apidb_dump::apidb_dump_block::ApidbDumpBlock;
 use crate::osm::apidb_dump::read::element_iterator::ElementIterator;
 use crate::osm::apidb_dump::read::table_def::TableDef;

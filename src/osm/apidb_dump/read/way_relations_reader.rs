@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use crate::osm::apidb_dump::read::table_def::TableDef;
 use crate::osm::apidb_dump::read::table_reader::{TableIterator, TableReader};
 use crate::osm::apidb_dump::read::table_record::TableRecord;
@@ -42,7 +41,6 @@ impl IntoIterator for WayRelationsReader {
 }
 
 pub(crate) struct WayRelationsIterator {
-    reader: WayRelationsReader,
     ways_iterator: TableIterator,
     way_nodes_iterator: TableIterator,
     way_tags_iterator: TableIterator,
@@ -59,7 +57,6 @@ impl WayRelationsIterator {
         let way_tags_iterator = reader.way_tags_reader.clone().into_iter();
         Ok(
             WayRelationsIterator {
-                reader,
                 ways_iterator,
                 way_nodes_iterator,
                 way_tags_iterator,

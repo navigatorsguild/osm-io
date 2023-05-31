@@ -3,14 +3,15 @@ use simple_logger::SimpleLogger;
 use osm_io::osm::apidb_dump::read::reader::Reader;
 use osm_io::osm::pbf::compression_type::CompressionType;
 use osm_io::osm::pbf::file_info::FileInfo;
+use osm_io::osm::pbf::parallel_writer::ParallelWriter;
 use osm_io::osm::pbf::writer::Writer;
 
 mod common;
 
 #[test]
-fn test_apidb_dump_reader_pbf_writer_pipe() -> Result<(), anyhow::Error>{
+fn test_apidb_dump_reader_parallel_pbf_writer_pipe() -> Result<(), anyhow::Error> {
     SimpleLogger::new().init()?;
-    log::info!("Started apidb dump reader pbf writer pipeline test");
+    log::info!("Started apidb dump reader parallel pbf writer pipeline test");
     common::setup();
     let input_path = PathBuf::from("./tests/fixtures/malta-230109-modified-history");
     let output_path = PathBuf::from("./target/results/malta-230109-modified-history.osm.pbf");
@@ -29,23 +30,24 @@ fn test_apidb_dump_reader_pbf_writer_pipe() -> Result<(), anyhow::Error>{
         Some("from-apidb-dump".to_string()),
         None,
         None,
-        None
+        None,
     );
 
-    let mut writer = Writer::from_file_info(
+    let mut writer = ParallelWriter::from_file_info(
+        4 * 8000 * 64,
+        8000,
         output_path.clone(),
         info,
         CompressionType::Zlib,
     )?;
 
-    writer.write_header()?;
+    writer.write_header().expect("Failed to write the pbf header");
     for element in reader.elements()? {
         writer.write_element(element)?;
     }
     writer.close()?;
-
     common::analyze_pbf_output(output_path, fixture_analysis_path);
 
-    log::info!("Finished apidb dump reader pbf writer pipeline test");
+    log::info!("Finished apidb dump reader parallel pbf writer pipeline test");
     Ok(())
 }

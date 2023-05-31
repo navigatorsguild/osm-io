@@ -70,7 +70,7 @@ impl TablePkey {
                 key.push(Field::new(Self::index("id", &fields)?, FieldType::Integer).with_str_name("id"));
             }
             _ => {
-                error = Some(anyhow!("Unknown table: {}", name));
+                error = Some(anyhow!("No primary key defined for table: {}", name));
             }
         }
         if error.is_some() {
@@ -94,6 +94,10 @@ impl TablePkey {
                 Ok(i + 1)
             }
         }
+    }
+
+    pub fn name(&self) -> String {
+        self.name.clone()
     }
 
     pub fn key(&self) -> Vec<Field> {

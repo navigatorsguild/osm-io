@@ -1,6 +1,4 @@
-use std::collections::HashMap;
 use crate::osm::apidb_dump::read::relation_member_record::RelationMemberRecord;
-use crate::osm::apidb_dump::read::relation_record::RelationRecord;
 use crate::osm::apidb_dump::read::relation_relation::RelationRelation;
 use crate::osm::apidb_dump::read::relation_tag_record::RelationTagRecord;
 use crate::osm::apidb_dump::read::table_def::TableDef;

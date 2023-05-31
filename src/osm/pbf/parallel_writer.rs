@@ -1,4 +1,3 @@
-use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -8,18 +7,15 @@ use std::path::PathBuf;
 use std::sync::{Arc, Mutex, RwLock};
 use std::thread::LocalKey;
 
-use anyhow::{anyhow, Context, Error};
+use anyhow::{anyhow, Error};
 use command_executor::command::Command;
 use command_executor::shutdown_mode::ShutdownMode;
 use command_executor::thread_pool::ThreadPool;
 use command_executor::thread_pool_builder::ThreadPoolBuilder;
-use num_format::Locale::{fil, tr};
-use prost::encoding::float::encoded_len;
 
 use crate::osm::model::element::Element;
 use crate::osm::pbf::compression_type::CompressionType;
 use crate::osm::pbf::file_block::FileBlock;
-use crate::osm::pbf::file_block_metadata::FileBlockMetadata;
 use crate::osm::pbf::file_info::FileInfo;
 use crate::osm::pbf::writer::Writer;
 
@@ -41,7 +37,7 @@ thread_local! {
 fn flush_sorted_top() {
     ELEMENT_ORDERING_BUFFER.with(|element_ordering_buffer| {
         element_ordering_buffer.borrow_mut().make_contiguous().sort();
-        let mut elements = split_file_block(element_ordering_buffer);
+        let elements = split_file_block(element_ordering_buffer);
         set_current_min_element(elements.get(0));
         NEXT_THREAD_POOL.with(|thread_pool| {
             let thread_pool = thread_pool.borrow();
@@ -56,7 +52,7 @@ fn flush_all_sorted() {
     ELEMENT_ORDERING_BUFFER.with(|element_ordering_buffer| {
         element_ordering_buffer.borrow_mut().make_contiguous().sort();
         while element_ordering_buffer.borrow().len() > 0 {
-            let mut elements = split_file_block(element_ordering_buffer);
+            let elements = split_file_block(element_ordering_buffer);
             set_current_min_element(elements.get(0));
             NEXT_THREAD_POOL.with(|thread_pool| {
                 let thread_pool = thread_pool.borrow();
@@ -70,7 +66,7 @@ fn flush_all_sorted() {
 
 fn split_file_block(element_ordering_buffer: &RefCell<VecDeque<Element>>) -> Vec<Element> {
     let mut elements = Vec::with_capacity(file_block_size());
-    for i in 0..file_block_size() {
+    for _i in 0..file_block_size() {
         let element = element_ordering_buffer.borrow_mut().pop_front();
         match element {
             None => {
@@ -370,7 +366,7 @@ impl ParallelWriter {
         Ok(())
     }
 
-    pub fn flush(&mut self) -> Result<(), anyhow::Error> {
+    pub fn close(&mut self) -> Result<(), anyhow::Error> {
         self.flush_element_ordering();
         Self::shutdown(self.element_ordering_pool.clone())?;
         Self::shutdown(self.encoding_pool.clone())?;

@@ -28,10 +28,12 @@ impl WayNodeRecord {
     pub(crate)  fn node_id(&self) -> i64 {
         self.node_id
     }
+
     pub(crate)  fn version(&self) -> i64 {
         self.version
     }
 
+    #[allow(dead_code)]
     pub(crate)  fn sequence_id(&self) -> i64 {
         self.sequence_id
     }

@@ -1,6 +1,5 @@
 use std::fs::File;
 use std::io::{Write};
-use std::ops::Div;
 use std::path::PathBuf;
 use anyhow::{anyhow, Context};
 use crate::osm::model::bounding_box::BoundingBox;
@@ -129,7 +128,7 @@ impl Writer {
         Ok(())
     }
 
-    pub fn flush(&mut self) -> Result<(), anyhow::Error> {
+    pub fn close(&mut self) -> Result<(), anyhow::Error> {
         let elements = self.element_accumulator.elements();
         if elements.len() > 0 {
             self.write_elements(elements)?;

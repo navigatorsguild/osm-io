@@ -26,6 +26,7 @@ impl WayRelation {
         &self.way
     }
 
+    #[allow(dead_code)]
     pub(crate) fn way_nodes(&self) -> &Vec<WayNodeRecord> {
         &self.way_nodes
     }
@@ -34,6 +35,7 @@ impl WayRelation {
         std::mem::take(&mut self.way_nodes)
     }
 
+    #[allow(dead_code)]
     pub(crate) fn tags(&self) -> &Vec<WayTagRecord> {
         &self.tags
     }

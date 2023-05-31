@@ -149,7 +149,7 @@ impl PartialEq<Self> for Element {
             Element::Way { way } => {
                 let id = way.id();
                 match other {
-                    Element::Node { node } => {
+                    Element::Node { .. } => {
                         false
                     }
                     Element::Way { way } => {
@@ -166,7 +166,7 @@ impl PartialEq<Self> for Element {
             Element::Relation { relation } => {
                 let id = relation.id();
                 match other {
-                    Element::Node { node } => {
+                    Element::Node { .. } => {
                         false
                     }
                     Element::Way { .. } => {
@@ -182,7 +182,7 @@ impl PartialEq<Self> for Element {
             }
             Element::Sentinel => {
                 match other {
-                    Element::Node { node } => {
+                    Element::Node { .. } => {
                         false
                     }
                     Element::Way { .. } => {
@@ -229,7 +229,7 @@ impl Ord for Element {
             Element::Way { way } => {
                 let id = way.id();
                 match other {
-                    Element::Node { node } => {
+                    Element::Node { .. } => {
                         Ordering::Greater
                     }
                     Element::Way { way } => {
@@ -246,7 +246,7 @@ impl Ord for Element {
             Element::Relation { relation } => {
                 let id = relation.id();
                 match other {
-                    Element::Node { node } => {
+                    Element::Node { .. } => {
                         Ordering::Greater
                     }
                     Element::Way { .. } => {
@@ -262,7 +262,7 @@ impl Ord for Element {
             }
             Element::Sentinel => {
                 match other {
-                    Element::Node { node } => {
+                    Element::Node { .. } => {
                         Ordering::Less
                     }
                     Element::Way { .. } => {

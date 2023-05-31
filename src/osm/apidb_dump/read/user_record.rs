@@ -163,6 +163,7 @@ impl UserRecord {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn email(&self) -> &String {
         &self.email
     }
@@ -171,10 +172,12 @@ impl UserRecord {
         self.id
     }
 
+    #[allow(dead_code)]
     pub(crate) fn pass_crypt(&self) -> &String {
         &self.pass_crypt
     }
 
+    #[allow(dead_code)]
     pub(crate) fn creation_time(&self) -> &NaiveDateTime {
         &self.creation_time
     }
@@ -183,98 +186,122 @@ impl UserRecord {
         &self.display_name
     }
 
+    #[allow(dead_code)]
     pub(crate) fn data_public(&self) -> bool {
         self.data_public
     }
 
+    #[allow(dead_code)]
     pub(crate) fn description(&self) -> &String {
         &self.description
     }
 
+    #[allow(dead_code)]
     pub(crate) fn home_lat(&self) -> Option<f64> {
         self.home_lat
     }
 
+    #[allow(dead_code)]
     pub(crate) fn home_lon(&self) -> Option<f64> {
         self.home_lon
     }
 
+    #[allow(dead_code)]
     pub(crate) fn home_zoom(&self) -> i16 {
         self.home_zoom
     }
 
+    #[allow(dead_code)]
     pub(crate) fn pass_salt(&self) -> Option<&String> {
         self.pass_salt.as_ref()
     }
 
+    #[allow(dead_code)]
     pub(crate) fn email_valid(&self) -> bool {
         self.email_valid
     }
 
+    #[allow(dead_code)]
     pub(crate) fn new_email(&self) -> Option<&String> {
         self.new_email.as_ref()
     }
 
+    #[allow(dead_code)]
     pub(crate) fn creation_ip(&self) -> Option<&String> {
         self.creation_ip.as_ref()
     }
 
+    #[allow(dead_code)]
     pub(crate) fn languages(&self) -> Option<&String> {
         self.languages.as_ref()
     }
 
+    #[allow(dead_code)]
     pub(crate) fn status(&self) -> &UserStatus {
         &self.status
     }
 
+    #[allow(dead_code)]
     pub(crate) fn terms_agreed(&self) -> &Option<NaiveDateTime> {
         &self.terms_agreed
     }
 
+    #[allow(dead_code)]
     pub(crate) fn consider_pd(&self) -> bool {
         self.consider_pd
     }
 
+    #[allow(dead_code)]
     pub(crate) fn auth_uid(&self) -> Option<&String> {
         self.auth_uid.as_ref()
     }
 
+    #[allow(dead_code)]
     pub(crate) fn preferred_editor(&self) -> Option<&String> {
         self.preferred_editor.as_ref()
     }
 
+    #[allow(dead_code)]
     pub(crate) fn terms_seen(&self) -> bool {
         self.terms_seen
     }
 
+    #[allow(dead_code)]
     pub(crate) fn description_format(&self) -> &FormatEnum {
         &self.description_format
     }
 
+    #[allow(dead_code)]
     pub(crate) fn changesets_count(&self) -> i32 {
         self.changesets_count
     }
 
+    #[allow(dead_code)]
     pub(crate) fn traces_count(&self) -> i32 {
         self.traces_count
     }
 
+    #[allow(dead_code)]
     pub(crate) fn diary_entries_count(&self) -> i32 {
         self.diary_entries_count
     }
 
+    #[allow(dead_code)]
     pub(crate) fn image_use_gravatar(&self) -> bool {
         self.image_use_gravatar
     }
 
+    #[allow(dead_code)]
     pub(crate) fn auth_provider(&self) -> Option<&String> {
         self.auth_provider.as_ref()
     }
 
+    #[allow(dead_code)]
     pub(crate) fn home_tile(&self) -> Option<i64> {
         self.home_tile
     }
 
+    #[allow(dead_code)]
     pub(crate) fn tou_agreed(&self) -> &Option<NaiveDateTime> {
         &self.tou_agreed
     }

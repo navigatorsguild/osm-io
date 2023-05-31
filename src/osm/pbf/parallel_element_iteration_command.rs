@@ -1,9 +1,7 @@
 use std::sync::Arc;
-use std::thread;
 
 use anyhow::Error;
 use command_executor::command::Command;
-use num_format::Locale::fil;
 
 use crate::osm::model::element::Element;
 use crate::osm::pbf::blob_desc::BlobDesc;

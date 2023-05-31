@@ -1,6 +1,3 @@
-use std::fs::File;
-
-use anyhow::Error;
 use chrono::{DateTime, NaiveDateTime, SecondsFormat, Utc};
 
 use crate::osm::apidb_dump::apidb_dump_block::ApidbDumpBlock;

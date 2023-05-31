@@ -14,7 +14,7 @@ fn test_pbf_rw_pipe() -> Result<(), anyhow::Error> {
     SimpleLogger::new().init().unwrap();
     common::setup();
     let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
-    let output_path = PathBuf::from("./tests/results/malta-230109.osm.pbf");
+    let output_path = PathBuf::from("./target/results/malta-230109.osm.pbf");
     let fixture_analysis_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf.osm.pbf.analysis.json");
 
     let mut stopwatch = StopWatch::new();
@@ -35,7 +35,7 @@ fn test_pbf_rw_pipe() -> Result<(), anyhow::Error> {
     for element in reader.elements()? {
         writer.write_element(element)?;
     }
-    writer.flush()?;
+    writer.close()?;
 
     common::analyze_pbf_output(output_path, fixture_analysis_path);
 

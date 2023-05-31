@@ -62,6 +62,7 @@ impl NodeRecord {
         self.timestamp
     }
 
+    #[allow(dead_code)]
     pub(crate)  fn tile(&self) -> i64 {
         self.tile
     }
@@ -70,6 +71,7 @@ impl NodeRecord {
         self.version
     }
 
+    #[allow(dead_code)]
     pub(crate)  fn redaction_id(&self) -> Option<i32> {
         self.redaction_id
     }

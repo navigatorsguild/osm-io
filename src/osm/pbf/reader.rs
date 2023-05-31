@@ -4,8 +4,6 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use command_executor::shutdown_mode::ShutdownMode;
 use command_executor::thread_pool_builder::ThreadPoolBuilder;
-use num_format::Locale::ta;
-use rayon::iter::{IterBridge, ParallelBridge};
 use crate::osm::model::element::Element;
 use crate::osm::pbf::file_info::FileInfo;
 use crate::osm::pbf::blob_iterator::BlobIterator;
@@ -54,19 +52,6 @@ impl Reader {
 
     pub fn blobs(&self) -> Result<BlobIterator, anyhow::Error> {
         BlobIterator::new(self.path.clone())
-    }
-
-    pub(crate) fn parallel_blobs(&self) -> Result<IterBridge<BlobIterator>, anyhow::Error> {
-        match BlobIterator::new(self.path.clone()) {
-            Ok(mut iterator) => {
-                // skip the header. doesn't make sense to include the header in parallel iteration
-                iterator.next();
-                Ok(iterator.par_bridge())
-            }
-            Err(e) => {
-                Err(e)
-            }
-        }
     }
 
     pub fn blocks(&self) -> Result<FileBlockIterator, anyhow::Error> {

@@ -49,6 +49,7 @@ impl RelationRecord {
         self.visible
     }
 
+    #[allow(dead_code)]
     pub(crate)  fn redaction_id(&self) -> Option<i32> {
         self.redaction_id
     }

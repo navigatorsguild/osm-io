@@ -29,10 +29,12 @@ impl WayTagRecord {
         self.version
     }
 
+    #[allow(dead_code)]
     pub(crate) fn k(&self) -> &String {
         &self.k
     }
 
+    #[allow(dead_code)]
     pub(crate) fn v(&self) -> &String {
         &self.v
     }

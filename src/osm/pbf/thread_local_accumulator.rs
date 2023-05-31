@@ -1,10 +1,6 @@
-use std::borrow::{Borrow, BorrowMut};
-use log::Log;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::ops::Deref;
-use data_encoding::{HEXLOWER, HEXUPPER};
-use num_format::Locale::el;
+use data_encoding::{HEXUPPER};
 use crate::osm::model::element::Element;
 
 thread_local! {
@@ -53,7 +49,7 @@ impl ThreadLocalAccumulator {
             if !accumulators.borrow().contains_key(self.id.as_str()) {
                 0
             } else {
-                let mut accumulators = accumulators.borrow_mut();
+                let accumulators = accumulators.borrow_mut();
                 let accumulator = accumulators.get(self.id.as_str()).unwrap();
                 accumulator.len()
             }

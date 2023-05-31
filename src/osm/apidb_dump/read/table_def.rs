@@ -1,6 +1,4 @@
-use std::fmt::format;
 use std::path::PathBuf;
-use num_format::Locale::pa;
 
 use crate::osm::apidb_dump::read::table_fields::TableFields;
 use crate::osm::apidb_dump::read::table_pkey::TablePkey;
@@ -19,10 +17,6 @@ impl TableDef {
     fn build_sorted_path(name: String, mut path: PathBuf) -> PathBuf {
         path.push(PathBuf::from(format!("sorted-{}.dat", name)));
         path
-    }
-
-    fn input_dir(path: PathBuf) -> PathBuf {
-        PathBuf::from(path.parent().unwrap())
     }
 
     pub fn new(name: String, path: PathBuf, tmp_path: PathBuf, fields: Vec<String>) -> Result<TableDef, anyhow::Error> {
@@ -55,6 +49,10 @@ impl TableDef {
 
     pub fn fields(&self) -> TableFields {
         self.fields.clone()
+    }
+
+    pub fn fields_ref(&self) -> &TableFields {
+        &self.fields
     }
 
     pub fn pkey(&self) -> TablePkey {

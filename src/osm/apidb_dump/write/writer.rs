@@ -15,7 +15,9 @@ use crate::osm::model::relation::{Member, Relation};
 use crate::osm::model::way::Way;
 
 pub struct Writer {
+    #[allow(dead_code)]
     output_path: PathBuf,
+    #[allow(dead_code)]
     compression_level: i8,
     writers: TableDataWriters,
 }
@@ -35,21 +37,26 @@ impl Writer {
 
     pub fn write(&mut self, mut block: ApidbDumpBlock) -> Result<(), anyhow::Error> {
         for element in block.take_elements() {
-            match element {
-                Element::Node { node } => {
-                    self.write_node(node)?;
-                }
-                Element::Way { way } => {
-                    self.write_way(way)?;
-                }
-                Element::Relation { relation } => {
-                    self.write_relation(relation)?;
-                }
-                Element::Sentinel => {}
-            }
+            self.write_element(element)?;
         }
         self.writers.flush_buffers()?;
 
+        Ok(())
+    }
+
+    pub fn write_element(&mut self, element: Element) -> Result<(), anyhow::Error> {
+        match element {
+            Element::Node { node } => {
+                self.write_node(node)?;
+            }
+            Element::Way { way } => {
+                self.write_way(way)?;
+            }
+            Element::Relation { relation } => {
+                self.write_relation(relation)?;
+            }
+            Element::Sentinel => {}
+        }
         Ok(())
     }
 
@@ -59,8 +66,6 @@ impl Writer {
 
         // public.current_nodes (id, latitude, longitude, changeset_id, visible, "timestamp", tile, version)
         // template context: 4228.dat
-        let lat = node.coordinate().lat();
-        let lon = node.coordinate().lon();
         let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
                            node.id(),
                            node.coordinate().lat7(),
@@ -360,33 +365,6 @@ impl Writer {
     }
 
     pub fn table_mapping(&self) -> Vec<String> {
-        Vec::new()
-    }
-
-    pub fn stats(&self) -> Vec<String> {
-        // let mut nodes = 0_i64;
-        // let mut dense_nodes = 0_i64;
-        // let mut ways = 0_i64;
-        // let mut relations = 0_i64;
-        // let mut formatted_nodes = Buffer::default();
-        // formatted_nodes.write_formatted(&nodes, &Locale::en);
-        //
-        // let mut formatted_dense_nodes = Buffer::default();
-        // formatted_dense_nodes.write_formatted(&dense_nodes, &Locale::en);
-        //
-        // let mut formatted_ways = Buffer::default();
-        // formatted_ways.write_formatted(&ways, &Locale::en);
-        //
-        // let mut formatted_relations = Buffer::default();
-        // formatted_relations.write_formatted(&relations, &Locale::en);
-        //
-        // let mut formatted_changesets = Buffer::default();
-        // formatted_changesets.write_formatted(writers.changeset_user_index.len().borrow(), &Locale::en);
-        //
-        // let mut formatted_users = Buffer::default();
-        // formatted_users.write_formatted(writers.user_index.len().borrow(), &Locale::en);
-
-        // TODO: add disk usage
         Vec::new()
     }
 

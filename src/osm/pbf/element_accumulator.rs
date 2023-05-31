@@ -100,6 +100,7 @@ impl ElementAccumulator {
         self.index
     }
 
+    #[allow(dead_code)]
     pub(crate) fn len(&self) -> usize {
         self.elements.len()
     }

@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use crate::osm::apidb_dump::read::table_fields::TableFields::{Changesets, NodeTags, RelationMembers, Relations, RelationTags, Users, WayNodes, Ways, WayTags,};
+use crate::osm::apidb_dump::read::table_fields::TableFields::{Changesets, NodeTags, RelationMembers, Relations, RelationTags, Users, WayNodes, Ways, WayTags};
 
 #[derive(Debug, Copy, Clone)]
 pub enum TableFields {
@@ -108,7 +108,7 @@ pub enum TableFields {
 
 impl TableFields {
     fn index(v: &str, fields: &Vec<String>) -> Result<usize, anyhow::Error> {
-        match fields.iter().position(|e| {*e == v.to_string()}) {
+        match fields.iter().position(|e| { *e == v.to_string() }) {
             None => {
                 Err(anyhow!("Field not found: {}", v))
             }
@@ -116,6 +116,23 @@ impl TableFields {
                 Ok(i)
             }
         }
+    }
+
+    pub fn is_of_interest(name: &str) -> bool {
+        let tables_of_interest = vec![
+            "public.nodes",
+            "public.node_tags",
+            "public.ways",
+            "public.way_nodes",
+            "public.way_tags",
+            "public.relations",
+            "public.relation_members",
+            "public.relation_tags",
+            "public.changesets",
+            "public.users",
+        ];
+
+        tables_of_interest.contains(&name)
     }
 
     pub fn new(name: String, fields: Vec<String>) -> Result<TableFields, anyhow::Error> {
@@ -144,7 +161,6 @@ impl TableFields {
                         v: Self::index("v", &fields)?,
                     }
                 )
-
             }
             "public.ways" => {
                 Ok(

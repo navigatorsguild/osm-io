@@ -1,6 +1,5 @@
 use crate::osm::apidb_dump::read::node_record::NodeRecord;
 use crate::osm::apidb_dump::read::node_tag_record::NodeTagRecord;
-use crate::osm::model::node::Node;
 
 #[derive(Debug)]
 pub(crate) struct NodeRelation{
@@ -23,6 +22,7 @@ impl NodeRelation {
         &self.node
     }
 
+    #[allow(dead_code)]
     pub(crate) fn tags(&self) -> &Vec<NodeTagRecord> {
         &self.tags
     }

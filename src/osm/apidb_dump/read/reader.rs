@@ -3,13 +3,12 @@ use std::fs;
 use std::ops::{AddAssign, SubAssign};
 use std::path::PathBuf;
 use regex::Regex;
-use transient_btree_index::{BtreeConfig, BtreeIndex};
 use crate::osm::apidb_dump::read::block_iterator::BlockIterator;
 use crate::osm::apidb_dump::read::table_def::TableDef;
+use crate::osm::apidb_dump::read::table_fields::TableFields;
+use crate::osm::apidb_dump::read::element_iterator::ElementIterator;
 
 pub struct Reader {
-    input_path: PathBuf,
-    tmp_path: PathBuf,
     tables: HashMap<String, TableDef>,
 }
 
@@ -26,6 +25,9 @@ impl Reader {
             let table_data_path = input_path.join(&raw_table_def.1);
             let captures = re.captures(&raw_table_def.0).unwrap();
             let name = captures.get(1).unwrap().as_str();
+            if !TableFields::is_of_interest(name) {
+                continue;
+            }
             let fields: Vec<&str> = captures.get(2).unwrap().as_str().split(", ").collect();
             tables.insert(
                 name.to_string(),
@@ -43,8 +45,6 @@ impl Reader {
 
         Ok(
             Reader {
-                input_path,
-                tmp_path,
                 tables,
             }
         )
@@ -101,6 +101,10 @@ impl Reader {
 
     pub fn blocks(&self) -> Result<BlockIterator, anyhow::Error> {
         BlockIterator::new(self.tables.clone())
+    }
+
+    pub fn elements(&self) -> Result<ElementIterator, anyhow::Error> {
+        ElementIterator::new(self.tables.clone())
     }
 }
 

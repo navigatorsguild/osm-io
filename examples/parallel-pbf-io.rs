@@ -63,6 +63,6 @@ pub fn main() -> Result<(), anyhow::Error> {
     })?;
 
     let mut parallel_writer_guard = parallel_writer_clone.lock().unwrap();
-    parallel_writer_guard.flush()?;
+    parallel_writer_guard.close()?;
     Ok(())
 }

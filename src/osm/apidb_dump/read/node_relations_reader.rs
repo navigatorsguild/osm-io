@@ -1,6 +1,3 @@
-use std::borrow::{Borrow, BorrowMut};
-use std::collections::HashMap;
-use crate::osm::apidb_dump::read::node_record::NodeRecord;
 use crate::osm::apidb_dump::read::node_relation::NodeRelation;
 use crate::osm::apidb_dump::read::node_tag_record::NodeTagRecord;
 use crate::osm::apidb_dump::read::table_def::TableDef;
@@ -36,7 +33,6 @@ impl IntoIterator for NodeRelationsReader {
 }
 
 pub(crate) struct NodeRelationsIterator {
-    reader: NodeRelationsReader,
     nodes_iterator: TableIterator,
     node_tags_iterator: TableIterator,
     next_node_tag_record: Option<NodeTagRecord>,
@@ -49,7 +45,6 @@ impl NodeRelationsIterator {
         let node_tags_iterator = reader.node_tags_reader.clone().into_iter();
         Ok(
             NodeRelationsIterator {
-                reader,
                 nodes_iterator,
                 node_tags_iterator,
                 next_node_tag_record: None,
@@ -107,7 +102,6 @@ impl Iterator for NodeRelationsIterator {
                 )
             } else {
                 panic!("Found incorrect record type, not a TableRecord:Node");
-                None
             }
         } else {
             None

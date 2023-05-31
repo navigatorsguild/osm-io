@@ -46,30 +46,37 @@ impl ChangesetRecord {
         self.user_id
     }
 
+    #[allow(dead_code)]
     pub(crate) fn created_at(&self) -> NaiveDateTime {
         self.created_at
     }
 
+    #[allow(dead_code)]
     pub(crate) fn min_lat(&self) -> i32 {
         self.min_lat
     }
 
+    #[allow(dead_code)]
     pub(crate) fn max_lat(&self) -> i32 {
         self.max_lat
     }
 
+    #[allow(dead_code)]
     pub(crate) fn min_lon(&self) -> i32 {
         self.min_lon
     }
 
+    #[allow(dead_code)]
     pub(crate) fn max_lon(&self) -> i32 {
         self.max_lon
     }
 
+    #[allow(dead_code)]
     pub(crate) fn closed_at(&self) -> NaiveDateTime {
         self.closed_at
     }
 
+    #[allow(dead_code)]
     pub(crate) fn num_changes(&self) -> i32 {
         self.num_changes
     }

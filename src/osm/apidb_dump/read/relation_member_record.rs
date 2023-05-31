@@ -78,6 +78,7 @@ impl RelationMemberRecord {
         self.member_id
     }
 
+    #[allow(dead_code)]
     pub(crate) fn member_role(&self) -> &String {
         &self.member_role
     }
@@ -90,6 +91,7 @@ impl RelationMemberRecord {
         self.version
     }
 
+    #[allow(dead_code)]
     pub(crate) fn sequence_id(&self) -> i64 {
         self.sequence_id
     }

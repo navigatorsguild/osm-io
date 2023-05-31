@@ -1,17 +1,12 @@
 use std::collections::HashMap;
-use std::fs::read;
-use std::hash::Hash;
-use std::path::Iter;
 use anyhow::anyhow;
 use text_file_sort::sort::Sort;
 use regex::Regex;
 use transient_btree_index::{BtreeConfig, BtreeIndex};
-use crate::osm::apidb_dump::read::node_relation::NodeRelation;
 use crate::osm::apidb_dump::read::node_relations_reader::{NodeRelationsIterator, NodeRelationsReader};
 use crate::osm::apidb_dump::read::relation_member_record::RelationMemberType;
 use crate::osm::apidb_dump::read::relation_relations_reader::{RelationRelationsIterator, RelationRelationsReader};
 use crate::osm::apidb_dump::read::table_def::TableDef;
-use crate::osm::apidb_dump::read::table_reader;
 use crate::osm::apidb_dump::read::table_reader::TableReader;
 use crate::osm::apidb_dump::read::table_record::TableRecord;
 use crate::osm::apidb_dump::read::way_relations_reader::{WayRelationsIterator, WayRelationsReader};
@@ -32,7 +27,6 @@ enum IterationState {
 }
 
 pub struct ElementIterator {
-    tables: HashMap<String, TableDef>,
     user_index: BtreeIndex<i64, String>,
     changeset_user_index: BtreeIndex<i64, i64>,
     iteration_state: IterationState,
@@ -68,7 +62,6 @@ impl ElementIterator {
 
         Ok(
             ElementIterator {
-                tables,
                 user_index,
                 changeset_user_index,
                 iteration_state: IterationState::Start,
@@ -106,10 +99,8 @@ impl ElementIterator {
     }
 
     fn sort_tables(tables: &HashMap<String, TableDef>) -> Result<(), anyhow::Error> {
-        for (table_name, table_def) in tables {
+        for (_table_name, table_def) in tables {
             std::fs::create_dir_all(table_def.tmp_path())?;
-            println!("table: {table_name}");
-            println!("{:?}", table_def.path());
             let mut text_file = Sort::new(vec![table_def.path()], table_def.sorted_path());
             text_file.with_tmp_dir(table_def.tmp_path());
             text_file.with_intermediate_files(4096);
@@ -117,7 +108,6 @@ impl ElementIterator {
             text_file.with_fields(table_def.pkey().key());
             text_file.with_ignore_empty();
             text_file.with_ignore_lines(Regex::new("^\\\\\\.$")?);
-            println!("{:?}", table_def.pkey().key());
             text_file.sort()?;
         }
         Ok(())

@@ -46,7 +46,7 @@ pub fn main() -> Result<(), anyhow::Error> {
         }
     }
 
-    writer.flush()?;
+    writer.close()?;
 
     Ok(())
 }

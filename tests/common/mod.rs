@@ -17,7 +17,6 @@ pub fn setup() {
     let fixture_link = Url::from_str("http://download.geofabrik.de/australia-oceania/niue-230225.osm.pbf").unwrap();
     let fixture_dir_path = PathBuf::from_str("./tests/fixtures/").unwrap();
     let results_dir_path = PathBuf::from_str("./target/results/").unwrap();
-    let parallel_results_dir_path = PathBuf::from_str("./target/results/").unwrap();
     let fixture_file_path = fixture_dir_path.join("niue-230225-geofabrik.osm.pbf");
     if !fixture_file_path.exists() {
         println!("Downloading fixture file: {} -> {:?}", fixture_link, fixture_file_path);
@@ -48,14 +47,6 @@ pub fn setup() {
         );
     } else {
         println!("Results directory exists at {:?}", results_dir_path);
-    }
-
-    if !parallel_results_dir_path.exists() {
-        fs::create_dir_all(&parallel_results_dir_path).expect(
-            format!("Failed to create parallel results directory: {:?}", parallel_results_dir_path).as_str()
-        );
-    } else {
-        println!("Results directory exists at {:?}", parallel_results_dir_path);
     }
 }
 
