@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
 
-use rayon::iter::ParallelIterator;
 use simple_logger::SimpleLogger;
 
 use osm_io::osm::model::element::Element;

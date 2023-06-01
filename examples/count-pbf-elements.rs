@@ -2,18 +2,10 @@ use std::path::PathBuf;
 use anyhow;
 use osm_io::osm::model::element::Element;
 use osm_io::osm::pbf;
-use osm_io::osm::pbf::compression_type::CompressionType;
-use osm_io::osm::pbf::element_iterator::ElementIterator;
 
 pub fn main() -> Result<(), anyhow::Error> {
     let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
-    let output_path = PathBuf::from("./target/results/malta-230109.osm.pbf");
     let reader = pbf::reader::Reader::new(input_path)?;
-    let writer = pbf::writer::Writer::from_file_info(
-        output_path,
-        reader.info().clone(),
-        CompressionType::Zlib,
-    )?;
 
     let mut nodes = 0 as usize;
     let mut ways = 0 as usize;

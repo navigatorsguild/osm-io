@@ -3,12 +3,8 @@ use std::path::PathBuf;
 use benchmark_rs::stopwatch::StopWatch;
 use simple_logger::SimpleLogger;
 
-use osm_io::osm::apidb_dump::read::reader::Reader as ApiDbDumpReader;
 use osm_io::osm::apidb_dump::write::writer::Writer as ApiDbDumpWriter;
-use osm_io::osm::pbf::compression_type::CompressionType;
-use osm_io::osm::pbf::file_info::FileInfo;
 use osm_io::osm::pbf::reader::Reader as PbfReader;
-use osm_io::osm::pbf::writer::Writer as PbfWriter;
 
 fn main() -> Result<(), anyhow::Error> {
     SimpleLogger::new().init().unwrap();

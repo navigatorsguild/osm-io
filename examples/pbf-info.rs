@@ -1,13 +1,7 @@
 use std::path::PathBuf;
 use anyhow;
-use num_format::Locale::ur;
 use osm_io::osm;
-use osm_io::osm::model::bounding_box::BoundingBox;
-use osm_io::osm::model::element::Element;
 use osm_io::osm::pbf;
-use osm_io::osm::pbf::compression_type::CompressionType;
-use osm_io::osm::pbf::element_iterator::ElementIterator;
-use osm_io::osm::pbf::file_info::FileInfo;
 
 /// Display PBF file informationn
 pub fn main() -> Result<(), anyhow::Error> {

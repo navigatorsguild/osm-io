@@ -2,5 +2,3 @@
 /Cargo.lock
 /.idea
 /tests/fixtures
-/tests/results
-/tests/parallel-results
