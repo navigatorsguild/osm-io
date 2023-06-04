@@ -1,7 +1,5 @@
 use std::collections::HashMap;
 use anyhow::anyhow;
-use text_file_sort::sort::Sort;
-use regex::Regex;
 use transient_btree_index::{BtreeConfig, BtreeIndex};
 use crate::osm::apidb_dump::read::node_relations_reader::{NodeRelationsIterator, NodeRelationsReader};
 use crate::osm::apidb_dump::read::relation_member_record::RelationMemberType;
@@ -37,26 +35,25 @@ pub struct ElementIterator {
 
 impl ElementIterator {
     pub fn new(tables: HashMap<String, TableDef>) -> Result<ElementIterator, anyhow::Error> {
-        Self::sort_tables(&tables)?;
         let user_index = Self::index_users(&tables)?;
         let changeset_user_index = Self::index_changesets(&tables)?;
         let node_relations_reader = NodeRelationsReader::new(
-            tables.get("public.nodes").unwrap(),
-            tables.get("public.node_tags").unwrap(),
+            tables.get("public.nodes").ok_or(anyhow!("missing table definition for public.nodes"))?,
+            tables.get("public.node_tags").ok_or(anyhow!("missing table definition for public.node_tags"))?,
         )?;
         let node_relations_iterator = node_relations_reader.into_iter();
 
         let way_relations_reader = WayRelationsReader::new(
-            tables.get("public.ways").unwrap(),
-            tables.get("public.way_nodes").unwrap(),
-            tables.get("public.way_tags").unwrap(),
+            tables.get("public.ways").ok_or(anyhow!("missing table definition for public.ways"))?,
+            tables.get("public.way_nodes").ok_or(anyhow!("missing table definition for public.way_nodes"))?,
+            tables.get("public.way_tags").ok_or(anyhow!("missing table definition for public.way_tags"))?,
         )?;
         let way_relations_iterator = way_relations_reader.into_iter();
 
         let relation_relations_reader = RelationRelationsReader::new(
-            tables.get("public.relations").unwrap(),
-            tables.get("public.relation_members").unwrap(),
-            tables.get("public.relation_tags").unwrap(),
+            tables.get("public.relations").ok_or(anyhow!("missing table definition for public.relations"))?,
+            tables.get("public.relation_members").ok_or(anyhow!("missing table definition for public.relation_members"))?,
+            tables.get("public.relation_tags").ok_or(anyhow!("missing table definition for public.relation_tags"))?,
         )?;
         let relation_relations_iterator = relation_relations_reader.into_iter();
 
@@ -97,21 +94,6 @@ impl ElementIterator {
         }
         Ok(user_index)
     }
-
-    fn sort_tables(tables: &HashMap<String, TableDef>) -> Result<(), anyhow::Error> {
-        for (_table_name, table_def) in tables {
-            std::fs::create_dir_all(table_def.tmp_path())?;
-            let mut text_file = Sort::new(vec![table_def.path()], table_def.sorted_path());
-            text_file.with_tmp_dir(table_def.tmp_path());
-            text_file.with_intermediate_files(4096);
-            text_file.with_tasks(num_cpus::get());
-            text_file.with_fields(table_def.pkey().key());
-            text_file.with_ignore_empty();
-            text_file.with_ignore_lines(Regex::new("^\\\\\\.$")?);
-            text_file.sort()?;
-        }
-        Ok(())
-    }
 }
 
 impl Iterator for ElementIterator {
@@ -120,6 +102,7 @@ impl Iterator for ElementIterator {
     fn next(&mut self) -> Option<Self::Item> {
         match self.iteration_state {
             IterationState::Start => {
+                log::info!("Start reading Nodes");
                 self.iteration_state = IterationState::Nodes;
                 self.next()
             }
@@ -127,6 +110,7 @@ impl Iterator for ElementIterator {
                 let node_relation = self.node_relations_iterator.next();
                 match node_relation {
                     None => {
+                        log::info!("Start reading Ways");
                         self.iteration_state = IterationState::Ways;
                         Some(Element::Sentinel)
                     }
@@ -163,6 +147,7 @@ impl Iterator for ElementIterator {
                 let way_relation = self.way_relations_iterator.next();
                 match way_relation {
                     None => {
+                        log::info!("Start reading Relations");
                         self.iteration_state = IterationState::Relations;
                         Some(Element::Sentinel)
                     }
@@ -248,7 +233,7 @@ impl Iterator for ElementIterator {
                 }
             }
             IterationState::End => {
-                // remove sorted files
+                log::info!("Complete iteration");
                 None
             }
         }

@@ -108,14 +108,16 @@ fn compression_type() -> CompressionType {
 }
 
 fn assert_order(element: &Element) {
-    assert!(
-        compare_to_current_min_element(&element).is_ge(),
-        "Element order, required by OSM PBF definition is lost. \
+    if !element.is_sentinel() {
+        assert!(
+            compare_to_current_min_element(&element).is_ge(),
+            "Element order, required by OSM PBF definition is lost. \
                     Possible cause is that the length of the ordering buffer ({}) is too short \
                     to for compensate for the loss of order caused by concurrent processing. \
                     Recommended: reader_tasks * 8000 * n",
-        element_ordering_buffer_size()
-    );
+            element_ordering_buffer_size()
+        );
+    }
 }
 
 fn compare_to_current_min_element(element: &Element) -> Ordering {

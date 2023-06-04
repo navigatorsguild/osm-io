@@ -28,8 +28,7 @@ rand = "0.8.5"
 data-encoding = "2.3.3"
 anyhow = "1.0.70"
 escape_string = "0.1.2"
-#command-executor = "0.0.5-alpha"
-command-executor = {path = "../command-executor"}
+command-executor = "0.0.6-alpha"
 #text-file-sort = "0.0.1-alpha"
 text-file-sort = {path = "../text-file-sort"}
 

@@ -3,7 +3,7 @@ use std::fs;
 use std::ops::{AddAssign, SubAssign};
 use std::path::PathBuf;
 use regex::Regex;
-use crate::osm::apidb_dump::read::block_iterator::BlockIterator;
+use text_file_sort::sort::Sort;
 use crate::osm::apidb_dump::read::table_def::TableDef;
 use crate::osm::apidb_dump::read::table_fields::TableFields;
 use crate::osm::apidb_dump::read::element_iterator::ElementIterator;
@@ -43,11 +43,29 @@ impl Reader {
             );
         }
 
+        Self::sort_tables(&tables)?;
+
         Ok(
             Reader {
                 tables,
             }
         )
+    }
+
+    fn sort_tables(tables: &HashMap<String, TableDef>) -> Result<(), anyhow::Error> {
+        for (table_name, table_def) in tables {
+            log::info!("Sort {} table data", table_name);
+            std::fs::create_dir_all(table_def.tmp_path())?;
+            let mut text_file = Sort::new(vec![table_def.path()], table_def.sorted_path());
+            text_file.with_tmp_dir(table_def.tmp_path());
+            text_file.with_intermediate_files(8192);
+            text_file.with_tasks(num_cpus::get());
+            text_file.with_fields(table_def.pkey().key());
+            text_file.with_ignore_empty();
+            text_file.with_ignore_lines(Regex::new("^\\\\\\.$")?);
+            text_file.sort()?;
+        }
+        Ok(())
     }
 
     fn get_table_def_strings(toc: &Vec<u8>) -> Vec<(String, String)> {
@@ -97,10 +115,6 @@ impl Reader {
             i.add_assign(1);
         }
         result
-    }
-
-    pub fn blocks(&self) -> Result<BlockIterator, anyhow::Error> {
-        BlockIterator::new(self.tables.clone())
     }
 
     pub fn elements(&self) -> Result<ElementIterator, anyhow::Error> {

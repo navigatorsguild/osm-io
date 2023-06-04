@@ -1,25 +1,11 @@
-use std::collections::HashMap;
-use std::ops::{AddAssign, DerefMut};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex};
 use simple_logger::SimpleLogger;
 use osm_io::osm::pbf;
-use osm_io::osm::pbf::blob_desc::BlobDesc;
 use osm_io::osm::pbf::compression_type::CompressionType;
-use osm_io::osm::pbf::file_block::FileBlock;
-use osm_io::osm::pbf::file_block_metadata::FileBlockMetadata;
-use std::cell::{RefCell};
 use benchmark_rs::stopwatch::StopWatch;
-use command_executor::command::Command;
-use command_executor::shutdown_mode::ShutdownMode;
-use command_executor::thread_pool::ThreadPool;
-use command_executor::thread_pool_builder::ThreadPoolBuilder;
-use osm_io::osm::model::element::Element;
-use osm_io::osm::pbf::file_info::FileInfo;
-use osm_io::osm::pbf::parallel_writer::ParallelWriter;
 use osm_io::osm::pbf::reader::Reader;
 use osm_io::osm::pbf::thread_local_accumulator::ThreadLocalAccumulator;
-use osm_io::osm::pbf::writer::Writer;
 
 mod common;
 
