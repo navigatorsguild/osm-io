@@ -1,11 +1,19 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+
 use anyhow;
+use benchmark_rs::stopwatch::StopWatch;
+use simple_logger::SimpleLogger;
+
 use osm_io::osm::model::element::Element;
 use osm_io::osm::pbf;
 
 pub fn main() -> Result<(), anyhow::Error> {
+    SimpleLogger::new().init()?;
+    log::info!("Started parallel count pbf elements");
+    let mut stopwatch = StopWatch::new();
+    stopwatch.start();
     let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
     let reader = pbf::reader::Reader::new(input_path)?;
 
@@ -28,25 +36,16 @@ pub fn main() -> Result<(), anyhow::Error> {
             Element::Relation { .. } => {
                 relations.fetch_add(1, Ordering::Relaxed);
             }
-            Element::Sentinel => {
-            }
+            Element::Sentinel => {}
         }
         Ok(())
     },
     )?;
 
-    println!("nodes: {}", nodes_clone.load(Ordering::Relaxed));
-    println!("ways: {}", ways_clone.load(Ordering::Relaxed));
-    println!("relations: {}", relations_clone.load(Ordering::Relaxed));
+    log::info!("nodes: {}", nodes_clone.load(Ordering::Relaxed));
+    log::info!("ways: {}", ways_clone.load(Ordering::Relaxed));
+    log::info!("relations: {}", relations_clone.load(Ordering::Relaxed));
 
-
-    // println!("nodes: {}", nodes);
-    // println!("ways: {}", ways);
-    // println!("relations: {}", relations);
-    //
-    // println!("tourism nodes: {}", tourism_nodes);
-    // println!("tourism ways: {}", tourism_ways);
-    // println!("tourism relations: {}", tourism_relations);
-
+    log::info!("Finished parallel count pbf elements, time: {}", stopwatch);
     Ok(())
 }

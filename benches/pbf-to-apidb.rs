@@ -6,12 +6,11 @@ use simple_logger::SimpleLogger;
 use osm_io::osm::apidb_dump::write::writer::Writer as ApiDbDumpWriter;
 use osm_io::osm::pbf::reader::Reader as PbfReader;
 
-fn main() -> Result<(), anyhow::Error> {
+#[test]
+fn pbf_to_apidb() -> Result<(), anyhow::Error> {
     SimpleLogger::new().init()?;
-    // let input_path = PathBuf::from("./tests/fixtures/history-malta-230109.osm.pbf");
-    // let output_path = PathBuf::from("./target/results/history-malta-230109");
-    let input_path = PathBuf::from("./tests/fixtures/germany-230109.osm.pbf");
-    let output_path = PathBuf::from("./target/results/germany-230109");
+    let input_path = PathBuf::from("./tests/fixtures/history-malta-230109.osm.pbf");
+    let output_path = PathBuf::from("./target/results/history-malta-230109");
 
     let mut stopwatch = StopWatch::new();
     stopwatch.start();

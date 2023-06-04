@@ -1,16 +1,22 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
+
 use anyhow;
+use benchmark_rs::stopwatch::StopWatch;
+use simple_logger::SimpleLogger;
+
 use osm_io::osm::model::element::Element;
 use osm_io::osm::pbf;
 use osm_io::osm::pbf::compression_type::CompressionType;
 use osm_io::osm::pbf::thread_local_accumulator::ThreadLocalAccumulator;
 
 pub fn main() -> Result<(), anyhow::Error> {
+    SimpleLogger::new().init()?;
+    log::info!("Started parallel pbf io pipeline");
+    let mut stopwatch = StopWatch::new();
+    stopwatch.start();
     let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
     let output_path = PathBuf::from("./target/results/parallel-malta-230109.osm.pbf");
-    // let input_path = PathBuf::from("./tests/fixtures/germany-230109.osm.pbf");
-    // let output_path = PathBuf::from("./target/results/parallel-germany-230109.osm.pbf");
     let reader = pbf::reader::Reader::new(input_path)?;
     let mut file_info = reader.info().clone();
     file_info.with_writingprogram_str("parallel-pbf-io-example");
@@ -45,10 +51,8 @@ pub fn main() -> Result<(), anyhow::Error> {
                     }
                 }
             }
-            Element::Way { way: _ } => {
-            }
-            Element::Relation { relation: _ } => {
-            }
+            Element::Way { way: _ } => {}
+            Element::Relation { relation: _ } => {}
             Element::Sentinel => {
                 filter_out = true;
                 let mut parallel_writer_guard = parallel_writer.lock().unwrap();
@@ -64,5 +68,6 @@ pub fn main() -> Result<(), anyhow::Error> {
 
     let mut parallel_writer_guard = parallel_writer_clone.lock().unwrap();
     parallel_writer_guard.close()?;
+    log::info!("Finished parallel pbf io pipeline, time: {}", stopwatch);
     Ok(())
 }

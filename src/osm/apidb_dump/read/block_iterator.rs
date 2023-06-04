@@ -5,21 +5,21 @@ use crate::osm::apidb_dump::read::element_iterator::ElementIterator;
 use crate::osm::apidb_dump::read::table_def::TableDef;
 use crate::osm::model::element::Element;
 
-pub struct BlockIterator {
+pub struct _BlockIterator {
     element_iterator: ElementIterator,
     current_index: usize,
 }
 
-impl BlockIterator {
-    pub fn new(tables: HashMap<String, TableDef>) -> Result<BlockIterator, anyhow::Error> {
+impl _BlockIterator {
+    pub fn new(tables: HashMap<String, TableDef>) -> Result<_BlockIterator, anyhow::Error> {
         let element_iterator = ElementIterator::new(tables)?;
         Ok(
-            BlockIterator { element_iterator, current_index: 0 }
+            _BlockIterator { element_iterator, current_index: 0 }
         )
     }
 }
 
-impl Iterator for BlockIterator {
+impl Iterator for _BlockIterator {
     type Item = ApidbDumpBlock;
 
     fn next(&mut self) -> Option<Self::Item> {

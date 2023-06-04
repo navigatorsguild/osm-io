@@ -1,11 +1,4 @@
 pub mod reader;
-pub mod block_iterator;
-pub mod table_def;
-pub mod table_fields;
-pub mod table_pkey;
-pub mod element_iterator;
-
-
 
 pub(crate) mod table_record;
 pub(crate) mod table_reader;
@@ -25,3 +18,8 @@ pub(crate) mod relation_member_record;
 pub(crate) mod relation_tag_record;
 pub(crate) mod relation_relation;
 pub(crate) mod relation_relations_reader;
+pub(crate) mod block_iterator;
+pub(crate) mod table_def;
+pub(crate) mod table_fields;
+pub(crate) mod table_pkey;
+pub(crate) mod element_iterator;

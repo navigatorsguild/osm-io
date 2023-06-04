@@ -4,7 +4,6 @@ use osm_io::osm::apidb_dump::read::reader::Reader;
 use osm_io::osm::pbf::compression_type::CompressionType;
 use osm_io::osm::pbf::file_info::FileInfo;
 use osm_io::osm::pbf::parallel_writer::ParallelWriter;
-use osm_io::osm::pbf::writer::Writer;
 
 mod common;
 

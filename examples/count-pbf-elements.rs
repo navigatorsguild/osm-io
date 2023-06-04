@@ -1,9 +1,17 @@
 use std::path::PathBuf;
+
 use anyhow;
+use benchmark_rs::stopwatch::StopWatch;
+use simple_logger::SimpleLogger;
+
 use osm_io::osm::model::element::Element;
 use osm_io::osm::pbf;
 
 pub fn main() -> Result<(), anyhow::Error> {
+    SimpleLogger::new().init()?;
+    log::info!("Started count pbf elements");
+    let mut stopwatch = StopWatch::new();
+    stopwatch.start();
     let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
     let reader = pbf::reader::Reader::new(input_path)?;
 
@@ -20,7 +28,7 @@ pub fn main() -> Result<(), anyhow::Error> {
             Element::Node { node } => {
                 nodes += 1;
                 for tag in node.tags() {
-                    if tag.k() == "tourism"{
+                    if tag.k() == "tourism" {
                         tourism_nodes += 1;
                     }
                 }
@@ -28,7 +36,7 @@ pub fn main() -> Result<(), anyhow::Error> {
             Element::Way { way } => {
                 ways += 1;
                 for tag in way.tags() {
-                    if tag.k() == "tourism"{
+                    if tag.k() == "tourism" {
                         tourism_ways += 1;
                     }
                 }
@@ -47,13 +55,15 @@ pub fn main() -> Result<(), anyhow::Error> {
         }
     }
 
-    println!("nodes: {}", nodes);
-    println!("ways: {}", ways);
-    println!("relations: {}", relations);
+    log::info!("nodes: {}", nodes);
+    log::info!("ways: {}", ways);
+    log::info!("relations: {}", relations);
 
-    println!("tourism nodes: {}", tourism_nodes);
-    println!("tourism ways: {}", tourism_ways);
-    println!("tourism relations: {}", tourism_relations);
+    log::info!("tourism nodes: {}", tourism_nodes);
+    log::info!("tourism ways: {}", tourism_ways);
+    log::info!("tourism relations: {}", tourism_relations);
+
+    log::info!("Finished count pbf elements, time: {}", stopwatch);
 
     Ok(())
 }

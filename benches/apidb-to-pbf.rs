@@ -7,10 +7,11 @@ use osm_io::osm::pbf::compression_type::CompressionType;
 use osm_io::osm::pbf::file_info::FileInfo;
 use osm_io::osm::pbf::writer::Writer;
 
-fn main() -> Result<(), anyhow::Error>{
+#[test]
+fn apidb_to_pbf() -> Result<(), anyhow::Error>{
     SimpleLogger::new()
-        .with_module_level("text_file_sort", LevelFilter::Info)
-        .with_module_level("osm_io", LevelFilter::Info)
+        .with_module_level("text_file_sort", LevelFilter::Warn)
+        .with_module_level("osm_io", LevelFilter::Warn)
         .init()?;
     log::info!("Started apidb dump reader pbf writer pipeline");
     let mut stopwatch = StopWatch::new();
