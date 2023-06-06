@@ -2,13 +2,13 @@ use crate::osm::apidb_dump::read::node_record::NodeRecord;
 use crate::osm::apidb_dump::read::node_tag_record::NodeTagRecord;
 
 #[derive(Debug)]
-pub(crate) struct NodeRelation{
+pub(crate) struct NodeRelation {
     node: NodeRecord,
     tags: Vec<NodeTagRecord>,
 }
 
 impl NodeRelation {
-    pub(crate)  fn new(
+    pub(crate) fn new(
         node: NodeRecord,
         tags: Vec<NodeTagRecord>,
     ) -> NodeRelation {

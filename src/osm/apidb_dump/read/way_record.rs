@@ -29,28 +29,28 @@ impl WayRecord {
         }
     }
 
-    pub(crate)  fn way_id(&self) -> i64 {
+    pub(crate) fn way_id(&self) -> i64 {
         self.way_id
     }
 
-    pub(crate)  fn changeset_id(&self) -> i64 {
+    pub(crate) fn changeset_id(&self) -> i64 {
         self.changeset_id
     }
 
-    pub(crate)  fn timestamp(&self) -> NaiveDateTime {
+    pub(crate) fn timestamp(&self) -> NaiveDateTime {
         self.timestamp
     }
 
-    pub(crate)  fn version(&self) -> i64 {
+    pub(crate) fn version(&self) -> i64 {
         self.version
     }
 
-    pub(crate)  fn visible(&self) -> bool {
+    pub(crate) fn visible(&self) -> bool {
         self.visible
     }
 
     #[allow(dead_code)]
-    pub(crate)  fn redaction_id(&self) -> Option<i32> {
+    pub(crate) fn redaction_id(&self) -> Option<i32> {
         self.redaction_id
     }
 }

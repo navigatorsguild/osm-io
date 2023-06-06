@@ -4,7 +4,7 @@ use crate::osm::apidb_dump::read::table_fields::TableFields;
 use crate::osm::apidb_dump::read::table_pkey::TablePkey;
 
 #[derive(Debug, Clone)]
-pub struct TableDef {
+pub(crate) struct TableDef {
     name: String,
     path: PathBuf,
     sorted_path: PathBuf,
@@ -19,7 +19,7 @@ impl TableDef {
         path
     }
 
-    pub fn new(name: String, path: PathBuf, tmp_path: PathBuf, fields: Vec<String>) -> Result<TableDef, anyhow::Error> {
+    pub(crate) fn new(name: String, path: PathBuf, tmp_path: PathBuf, fields: Vec<String>) -> Result<TableDef, anyhow::Error> {
         let table_def = TableDef {
             name: name.clone(),
             path: path.clone(),
@@ -31,31 +31,32 @@ impl TableDef {
         Ok(table_def)
     }
 
-    pub fn name(&self) -> String {
+    pub(crate) fn name(&self) -> String {
         self.name.clone()
     }
 
-    pub fn path(&self) -> PathBuf{
+    pub(crate) fn path(&self) -> PathBuf {
         self.path.clone()
     }
 
-    pub fn sorted_path(&self) -> PathBuf{
+    pub(crate) fn sorted_path(&self) -> PathBuf {
         self.sorted_path.clone()
     }
 
-    pub fn tmp_path(&self) -> PathBuf{
+    pub(crate) fn tmp_path(&self) -> PathBuf {
         self.tmp_path.clone()
     }
 
-    pub fn fields(&self) -> TableFields {
+    #[allow(dead_code)]
+    pub(crate) fn fields(&self) -> TableFields {
         self.fields.clone()
     }
 
-    pub fn fields_ref(&self) -> &TableFields {
+    pub(crate) fn fields_ref(&self) -> &TableFields {
         &self.fields
     }
 
-    pub fn pkey(&self) -> TablePkey {
+    pub(crate) fn pkey(&self) -> TablePkey {
         self.pkey.clone()
     }
 }

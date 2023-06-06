@@ -4,7 +4,7 @@ pub struct Tag {
     v: String,
 }
 
-impl Tag{
+impl Tag {
     pub fn new(k: String, v: String) -> Tag {
         Tag {
             k,

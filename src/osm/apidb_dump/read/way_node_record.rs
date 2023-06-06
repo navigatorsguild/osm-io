@@ -12,7 +12,7 @@ impl WayNodeRecord {
         node_id: i64,
         version: i64,
         sequence_id: i64,
-    )-> WayNodeRecord {
+    ) -> WayNodeRecord {
         WayNodeRecord {
             way_id,
             node_id,
@@ -21,20 +21,20 @@ impl WayNodeRecord {
         }
     }
 
-    pub(crate)  fn way_id(&self) -> i64 {
+    pub(crate) fn way_id(&self) -> i64 {
         self.way_id
     }
 
-    pub(crate)  fn node_id(&self) -> i64 {
+    pub(crate) fn node_id(&self) -> i64 {
         self.node_id
     }
 
-    pub(crate)  fn version(&self) -> i64 {
+    pub(crate) fn version(&self) -> i64 {
         self.version
     }
 
     #[allow(dead_code)]
-    pub(crate)  fn sequence_id(&self) -> i64 {
+    pub(crate) fn sequence_id(&self) -> i64 {
         self.sequence_id
     }
 }

@@ -5,7 +5,6 @@ use std::path::PathBuf;
 use anyhow::{Context, Error};
 use escape_string::escape;
 
-use crate::osm::apidb_dump::apidb_dump_block::ApidbDumpBlock;
 use crate::osm::apidb_dump::sql::{calculate_tile, to_sql_bool, to_sql_time, to_sql_time_micro};
 use crate::osm::apidb_dump::write::table_data_writers::TableDataWriters;
 use crate::osm::apidb_dump::write::toc::{load_template_mapping, write_toc};
@@ -33,15 +32,6 @@ impl Writer {
                 writers,
             }
         )
-    }
-
-    pub fn write(&mut self, mut block: ApidbDumpBlock) -> Result<(), anyhow::Error> {
-        for element in block.take_elements() {
-            self.write_element(element)?;
-        }
-        self.writers.flush_buffers()?;
-
-        Ok(())
     }
 
     pub fn write_element(&mut self, element: Element) -> Result<(), anyhow::Error> {
@@ -135,7 +125,6 @@ impl Writer {
             );
             self.writers.way_nodes.writer().write(line.as_bytes())?;
         }
-
 
         for tag in way.take_tags() {
             // public.current_way_tags (way_id, k, v)

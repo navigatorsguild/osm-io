@@ -3,13 +3,13 @@ use text_file_sort::field::Field;
 use text_file_sort::field_type::FieldType;
 
 #[derive(Clone, Debug)]
-pub struct TablePkey {
+pub(crate) struct TablePkey {
     name: String,
     key: Vec<Field>,
 }
 
 impl TablePkey {
-    pub fn new(name: String, fields: Vec<String>) -> Result<TablePkey, anyhow::Error> {
+    pub(crate) fn new(name: String, fields: Vec<String>) -> Result<TablePkey, anyhow::Error> {
         let mut key = Vec::new();
         let mut error = None;
         match name.as_str() {
@@ -96,11 +96,12 @@ impl TablePkey {
         }
     }
 
-    pub fn name(&self) -> String {
+    #[allow(dead_code)]
+    pub(crate) fn name(&self) -> String {
         self.name.clone()
     }
 
-    pub fn key(&self) -> Vec<Field> {
+    pub(crate) fn key(&self) -> Vec<Field> {
         self.key.clone()
     }
 }

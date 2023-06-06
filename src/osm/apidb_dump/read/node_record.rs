@@ -38,41 +38,41 @@ impl NodeRecord {
         }
     }
 
-    pub(crate)  fn node_id(&self) -> i64 {
+    pub(crate) fn node_id(&self) -> i64 {
         self.node_id
     }
 
-    pub(crate)  fn latitude(&self) -> i32 {
+    pub(crate) fn latitude(&self) -> i32 {
         self.latitude
     }
 
-    pub(crate)  fn longitude(&self) -> i32 {
+    pub(crate) fn longitude(&self) -> i32 {
         self.longitude
     }
 
-    pub(crate)  fn changeset_id(&self) -> i64 {
+    pub(crate) fn changeset_id(&self) -> i64 {
         self.changeset_id
     }
 
-    pub(crate)  fn visible(&self) -> bool {
+    pub(crate) fn visible(&self) -> bool {
         self.visible
     }
 
-    pub(crate)  fn timestamp(&self) -> NaiveDateTime {
+    pub(crate) fn timestamp(&self) -> NaiveDateTime {
         self.timestamp
     }
 
     #[allow(dead_code)]
-    pub(crate)  fn tile(&self) -> i64 {
+    pub(crate) fn tile(&self) -> i64 {
         self.tile
     }
 
-    pub(crate)  fn version(&self) -> i64 {
+    pub(crate) fn version(&self) -> i64 {
         self.version
     }
 
     #[allow(dead_code)]
-    pub(crate)  fn redaction_id(&self) -> Option<i32> {
+    pub(crate) fn redaction_id(&self) -> Option<i32> {
         self.redaction_id
     }
 }

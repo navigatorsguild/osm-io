@@ -1,8 +1,7 @@
 use anyhow::anyhow;
-use crate::osm::apidb_dump::read::table_fields::TableFields::{Changesets, NodeTags, RelationMembers, Relations, RelationTags, Users, WayNodes, Ways, WayTags};
 
 #[derive(Debug, Copy, Clone)]
-pub enum TableFields {
+pub(crate) enum TableFields {
     Nodes {
         node_id: usize,
         latitude: usize,
@@ -118,7 +117,7 @@ impl TableFields {
         }
     }
 
-    pub fn is_of_interest(name: &str) -> bool {
+    pub(crate) fn is_of_interest(name: &str) -> bool {
         let tables_of_interest = vec![
             "public.nodes",
             "public.node_tags",
@@ -135,7 +134,7 @@ impl TableFields {
         tables_of_interest.contains(&name)
     }
 
-    pub fn new(name: String, fields: Vec<String>) -> Result<TableFields, anyhow::Error> {
+    pub(crate) fn new(name: String, fields: Vec<String>) -> Result<TableFields, anyhow::Error> {
         match name.as_str() {
             "public.nodes" => {
                 Ok(
@@ -154,7 +153,7 @@ impl TableFields {
             }
             "public.node_tags" => {
                 Ok(
-                    NodeTags {
+                    TableFields::NodeTags {
                         node_id: Self::index("node_id", &fields)?,
                         version: Self::index("version", &fields)?,
                         k: Self::index("k", &fields)?,
@@ -164,7 +163,7 @@ impl TableFields {
             }
             "public.ways" => {
                 Ok(
-                    Ways {
+                    TableFields::Ways {
                         way_id: Self::index("way_id", &fields)?,
                         changeset_id: Self::index("changeset_id", &fields)?,
                         timestamp: Self::index("\"timestamp\"", &fields)?,
@@ -176,7 +175,7 @@ impl TableFields {
             }
             "public.way_nodes" => {
                 Ok(
-                    WayNodes {
+                    TableFields::WayNodes {
                         way_id: Self::index("way_id", &fields)?,
                         node_id: Self::index("node_id", &fields)?,
                         version: Self::index("version", &fields)?,
@@ -186,7 +185,7 @@ impl TableFields {
             }
             "public.way_tags" => {
                 Ok(
-                    WayTags {
+                    TableFields::WayTags {
                         way_id: Self::index("way_id", &fields)?,
                         k: Self::index("k", &fields)?,
                         v: Self::index("v", &fields)?,
@@ -196,7 +195,7 @@ impl TableFields {
             }
             "public.relations" => {
                 Ok(
-                    Relations {
+                    TableFields::Relations {
                         relation_id: Self::index("relation_id", &fields)?,
                         changeset_id: Self::index("changeset_id", &fields)?,
                         timestamp: Self::index("\"timestamp\"", &fields)?,
@@ -208,7 +207,7 @@ impl TableFields {
             }
             "public.relation_members" => {
                 Ok(
-                    RelationMembers {
+                    TableFields::RelationMembers {
                         relation_id: Self::index("relation_id", &fields)?,
                         member_type: Self::index("member_type", &fields)?,
                         member_id: Self::index("member_id", &fields)?,
@@ -220,7 +219,7 @@ impl TableFields {
             }
             "public.relation_tags" => {
                 Ok(
-                    RelationTags {
+                    TableFields::RelationTags {
                         relation_id: Self::index("relation_id", &fields)?,
                         k: Self::index("k", &fields)?,
                         v: Self::index("v", &fields)?,
@@ -230,7 +229,7 @@ impl TableFields {
             }
             "public.changesets" => {
                 Ok(
-                    Changesets {
+                    TableFields::Changesets {
                         id: Self::index("id", &fields)?,
                         user_id: Self::index("user_id", &fields)?,
                         created_at: Self::index("created_at", &fields)?,
@@ -245,7 +244,7 @@ impl TableFields {
             }
             "public.users" => {
                 Ok(
-                    Users {
+                    TableFields::Users {
                         email: Self::index("email", &fields)?,
                         id: Self::index("id", &fields)?,
                         pass_crypt: Self::index("pass_crypt", &fields)?,

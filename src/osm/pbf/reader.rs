@@ -1,14 +1,16 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
+
 use anyhow::anyhow;
 use command_executor::shutdown_mode::ShutdownMode;
 use command_executor::thread_pool_builder::ThreadPoolBuilder;
+
 use crate::osm::model::element::Element;
-use crate::osm::pbf::file_info::FileInfo;
 use crate::osm::pbf::blob_iterator::BlobIterator;
 use crate::osm::pbf::element_iterator::ElementIterator;
 use crate::osm::pbf::file_block_iterator::FileBlockIterator;
+use crate::osm::pbf::file_info::FileInfo;
 use crate::osm::pbf::parallel_element_iteration_command::ParallelElementIterationCommand;
 
 #[derive(Debug, Clone)]
@@ -50,7 +52,7 @@ impl Reader {
         )
     }
 
-    pub fn blobs(&self) -> Result<BlobIterator, anyhow::Error> {
+    pub(crate) fn blobs(&self) -> Result<BlobIterator, anyhow::Error> {
         BlobIterator::new(self.path.clone())
     }
 
@@ -132,7 +134,6 @@ impl Reader {
         &self.info
     }
 }
-
 
 #[cfg(test)]
 mod tests {

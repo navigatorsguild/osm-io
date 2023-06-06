@@ -1,10 +1,12 @@
 use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
-use anyhow::anyhow;
+
+use anyhow::{anyhow, Context};
 use flate2::bufread::ZlibDecoder;
 use flate2::Compression;
 use flate2::read::ZlibEncoder;
 use prost::Message;
+
 use crate::{osm, osmpbf};
 use crate::osm::model::bounding_box::BoundingBox;
 use crate::osm::model::element::Element;
@@ -13,8 +15,8 @@ use crate::osm::pbf::compression_type::CompressionType;
 use crate::osm::pbf::file_block_metadata::FileBlockMetadata;
 use crate::osm::pbf::osm_data::OsmData;
 use crate::osm::pbf::osm_header::OsmHeader;
-use crate::osmpbf::blob::Data;
 use crate::osmpbf::{Blob, BlobHeader};
+use crate::osmpbf::blob::Data;
 
 #[derive(Debug)]
 pub enum FileBlock {
@@ -28,16 +30,15 @@ pub enum FileBlock {
     },
 }
 
-
 impl FileBlock {
-    pub fn new(index: usize, blob_type: String, data: Vec<u8>) -> Result<FileBlock, anyhow::Error> {
+    pub(crate) fn new(index: usize, blob_type: String, data: Vec<u8>) -> Result<FileBlock, anyhow::Error> {
         let blob_type_str = blob_type.as_str();
         match blob_type_str {
             "OSMHeader" => {
                 Ok(
                     FileBlock::Header {
                         metadata: FileBlockMetadata::new(blob_type, index),
-                        header: OsmHeader::new(data)?,
+                        header: OsmHeader::from_bytes(data)?,
                     }
                 )
             }
@@ -45,7 +46,7 @@ impl FileBlock {
                 Ok(
                     FileBlock::Data {
                         metadata: FileBlockMetadata::new(blob_type, index),
-                        data: OsmData::new(index, data)?,
+                        data: OsmData::new(data)?,
                     }
                 )
             }
@@ -55,14 +56,15 @@ impl FileBlock {
         }
     }
 
-    pub fn from_elements(index: usize, elements: Vec<Element>) -> FileBlock {
+    pub(crate) fn from_elements(index: usize, elements: Vec<Element>) -> FileBlock {
         FileBlock::Data {
             metadata: FileBlockMetadata::new("OSMData".to_string(), index),
-            data: OsmData::from_elements(index, elements, None),
+            data: OsmData::from_elements( elements, None),
         }
     }
 
-    pub fn compute_bounding_box(&self) -> Option<BoundingBox> {
+    #[allow(dead_code)]
+    pub(crate) fn compute_bounding_box(&self) -> Option<BoundingBox> {
         match self {
             FileBlock::Header { metadata: _, header } => {
                 header.info().bounding_box().clone()
@@ -73,7 +75,7 @@ impl FileBlock {
         }
     }
 
-    pub fn from_header(osm_header: OsmHeader) -> FileBlock {
+    pub(crate) fn from_header(osm_header: OsmHeader) -> FileBlock {
         FileBlock::Header {
             metadata: FileBlockMetadata::new("OSMHeader".to_string(), 0),
             header: osm_header.clone(),
@@ -94,7 +96,7 @@ impl FileBlock {
         Ok(encoded)
     }
 
-    pub fn read_blob_data(blob: osmpbf::Blob) -> Result<Vec<u8>, anyhow::Error> {
+    pub(crate) fn read_blob_data(blob: osmpbf::Blob) -> Result<Vec<u8>, anyhow::Error> {
         match blob.data {
             None => {
                 Err(
@@ -140,28 +142,27 @@ impl FileBlock {
         }
     }
 
-
-    pub fn from_blob_desc(blob_desc: &osm::pbf::blob_desc::BlobDesc) -> Result<FileBlock, anyhow::Error> {
-        let mut file = File::open(blob_desc.path()).expect(
-            format!("Failed to open {:?} for reading", blob_desc.path()).as_str()
-        );
-        file.seek(SeekFrom::Start(blob_desc.start())).expect(
-            format!("Failed seek to {} in {:?} ", blob_desc.start(), blob_desc.path()).as_str()
-        );
+    pub(crate) fn from_blob_desc(blob_desc: &osm::pbf::blob_desc::BlobDesc) -> Result<FileBlock, anyhow::Error> {
+        let mut file = File::open(blob_desc.path()).with_context(
+            || anyhow!("Failed to open {:?} for reading", blob_desc.path())
+        )?;
+        file.seek(SeekFrom::Start(blob_desc.start())).with_context(
+            || anyhow!("Failed seek to {} in {:?} ", blob_desc.start(), blob_desc.path())
+        )?;
         let mut blob_buffer = vec![0; blob_desc.length() as usize];
-        file.read_exact(&mut blob_buffer).ok().expect(
-            format!("Failed to read {} bytes from {:?} ", blob_desc.length(), blob_desc.path()).as_str()
-        );
+        file.read_exact(&mut blob_buffer).ok().with_context(
+            || anyhow!("Failed to read {} bytes from {:?} ", blob_desc.length(), blob_desc.path())
+        )?;
         Self::deserialize(blob_desc, &mut blob_buffer)
     }
 
-    pub fn serialize(file_block: &FileBlock, compression: CompressionType) -> Result<(Vec<u8>, Vec<u8>), anyhow::Error> {
+    pub(crate) fn serialize(file_block: &FileBlock, compression: CompressionType) -> Result<(Vec<u8>, Vec<u8>), anyhow::Error> {
         let (blob_type, compression_level, block_data) = match file_block {
             FileBlock::Header { metadata: _, header } => {
-                ("OSMHeader".to_string(), Compression::none(), header.serialize().unwrap())
+                ("OSMHeader".to_string(), Compression::none(), header.serialize()?)
             }
             FileBlock::Data { metadata: _, data } => {
-                ("OSMData".to_string(), Compression::default(), data.serialize().unwrap())
+                ("OSMData".to_string(), Compression::default(), data.serialize()?)
             }
         };
 
@@ -202,14 +203,15 @@ impl FileBlock {
 
     fn deserialize(blob_desc: &BlobDesc, blob_buffer: &mut Vec<u8>) -> Result<FileBlock, anyhow::Error> {
         // use BlobDesc rather than BlobHeader to skip reading again the blob header
-        let protobuf_blob = osmpbf::Blob::decode(&mut Cursor::new(blob_buffer)).expect(
-            format!("Failed to decode a message from blob {} from {:?}", blob_desc.index(), blob_desc.path()).as_str()
-        );
-        let data = FileBlock::read_blob_data(protobuf_blob).unwrap();
+        let protobuf_blob = osmpbf::Blob::decode(&mut Cursor::new(blob_buffer)).with_context(
+            || anyhow!("Failed to decode a message from blob {} from {:?}", blob_desc.index(), blob_desc.path())
+        )?;
+        let data = FileBlock::read_blob_data(protobuf_blob)?;
         FileBlock::new(blob_desc.index(), blob_desc.t(), data)
     }
 
-    pub fn metadata(&self) -> &FileBlockMetadata {
+    #[allow(dead_code)]
+    pub(crate) fn metadata(&self) -> &FileBlockMetadata {
         match self {
             FileBlock::Header { metadata, header: _ } => {
                 metadata
@@ -220,7 +222,7 @@ impl FileBlock {
         }
     }
 
-    pub fn as_osm_header(&self) -> Result<&OsmHeader, anyhow::Error> {
+    pub(crate) fn as_osm_header(&self) -> Result<&OsmHeader, anyhow::Error> {
         match self {
             FileBlock::Header { header, .. } => {
                 Ok(header)
@@ -230,7 +232,7 @@ impl FileBlock {
             }
         }
     }
-pub fn is_osm_header(&self) -> bool {
+    pub(crate) fn is_osm_header(&self) -> bool {
         match self {
             FileBlock::Header { header: _, .. } => {
                 true
@@ -241,11 +243,12 @@ pub fn is_osm_header(&self) -> bool {
         }
     }
 
-    pub fn is_osm_data(&self) -> bool {
+    pub(crate) fn is_osm_data(&self) -> bool {
         !self.is_osm_header()
     }
 
-    pub fn as_osm_data(&self) -> Result<&OsmData, anyhow::Error> {
+    #[allow(dead_code)]
+    pub(crate) fn as_osm_data(&self) -> Result<&OsmData, anyhow::Error> {
         match self {
             FileBlock::Header { .. } => {
                 Err(anyhow!("Not an OSMData"))
@@ -256,11 +259,12 @@ pub fn is_osm_header(&self) -> bool {
         }
     }
 
-    pub fn elements(&self) -> &Vec<Element> {
+    #[allow(dead_code)]
+    pub(crate) fn elements(&self) -> &Vec<Element> {
         self.as_osm_data().unwrap().elements()
     }
 
-    pub fn take_elements(&mut self) -> Vec<Element> {
+    pub(crate) fn take_elements(&mut self) -> Vec<Element> {
         match self {
             FileBlock::Header { .. } => {
                 panic!("Not a Data variant")

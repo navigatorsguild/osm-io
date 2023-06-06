@@ -2,11 +2,13 @@ use std::collections::HashMap;
 use std::fs;
 use std::ops::{AddAssign, SubAssign};
 use std::path::PathBuf;
+
 use regex::Regex;
 use text_file_sort::sort::Sort;
+
+use crate::osm::apidb_dump::read::element_iterator::ElementIterator;
 use crate::osm::apidb_dump::read::table_def::TableDef;
 use crate::osm::apidb_dump::read::table_fields::TableFields;
-use crate::osm::apidb_dump::read::element_iterator::ElementIterator;
 
 pub struct Reader {
     tables: HashMap<String, TableDef>,
@@ -69,7 +71,6 @@ impl Reader {
     }
 
     fn get_table_def_strings(toc: &Vec<u8>) -> Vec<(String, String)> {
-
         // COPY public.node_tags (node_id, version, k, v) FROM stdin;......3838.dat
         let mut result: Vec<(String, String)> = Vec::new();
         let copy = "COPY ".as_bytes();
