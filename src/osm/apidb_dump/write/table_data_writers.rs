@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 use std::path::PathBuf;
+
 use json::JsonValue;
 use transient_btree_index::{BtreeConfig, BtreeIndex};
+
 use crate::osm::apidb_dump::write::table_data_writer::TableDataWriter;
 
 pub(crate) struct TableDataWriters {
@@ -148,7 +150,7 @@ impl TableDataWriters {
         Ok(())
     }
 
-    pub(crate) fn close(&mut self) -> Result<(), anyhow::Error>{
+    pub(crate) fn close(&mut self) -> Result<(), anyhow::Error> {
         self.acls.close()?;
         self.active_storage_attachments.close()?;
         self.active_storage_blobs.close()?;

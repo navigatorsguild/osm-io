@@ -1,6 +1,8 @@
 use std::collections::HashMap;
+
 use anyhow::anyhow;
 use transient_btree_index::{BtreeConfig, BtreeIndex};
+
 use crate::osm::apidb_dump::read::node_relations_reader::{NodeRelationsIterator, NodeRelationsReader};
 use crate::osm::apidb_dump::read::relation_member_record::RelationMemberType;
 use crate::osm::apidb_dump::read::relation_relations_reader::{RelationRelationsIterator, RelationRelationsReader};
@@ -34,7 +36,7 @@ pub struct ElementIterator {
 }
 
 impl ElementIterator {
-    pub fn new(tables: HashMap<String, TableDef>) -> Result<ElementIterator, anyhow::Error> {
+    pub(crate) fn new(tables: HashMap<String, TableDef>) -> Result<ElementIterator, anyhow::Error> {
         let user_index = Self::index_users(&tables)?;
         let changeset_user_index = Self::index_changesets(&tables)?;
         let node_relations_reader = NodeRelationsReader::new(

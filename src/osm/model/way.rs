@@ -11,8 +11,6 @@ pub struct Way {
     visible: bool,
     refs: Vec<i64>,
     tags: Vec<Tag>,
-
-    // TODO: LocationsOnWays
 }
 
 impl Way {

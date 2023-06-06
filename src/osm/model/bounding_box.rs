@@ -1,8 +1,9 @@
 use std::fmt::{Display, Formatter};
+
 use crate::osm::model::coordinate::Coordinate;
 
 #[derive(Debug, Default, Clone)]
-pub struct BoundingBox{
+pub struct BoundingBox {
     left: f64,
     right: f64,
     top: f64,

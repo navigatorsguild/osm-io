@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+
 use crate::osm::model::node::Node;
 use crate::osm::model::relation::Relation;
 use crate::osm::model::way::Way;

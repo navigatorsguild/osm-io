@@ -70,7 +70,6 @@ impl RelationRelationsIterator {
 impl Iterator for RelationRelationsIterator {
     type Item = RelationRelation;
 
-    // TODO: use member sequence
     fn next(&mut self) -> Option<Self::Item> {
         // ADD CONSTRAINT relation_members_id_fkey FOREIGN KEY (relation_id, version) REFERENCES public.relations(relation_id, version);
         // ADD CONSTRAINT relation_tags_id_fkey FOREIGN KEY (relation_id, version) REFERENCES public.relations(relation_id, version);

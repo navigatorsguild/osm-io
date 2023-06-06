@@ -1,20 +1,21 @@
 pub mod reader;
 pub mod writer;
 pub mod parallel_writer;
-pub mod osm_data;
-pub mod osm_header;
 pub mod element_iterator;
-pub mod blob_iterator;
-pub mod blob_desc;
 pub mod file_block_iterator;
 pub mod file_block;
-pub mod file_block_metadata;
 pub mod file_info;
 pub mod compression_type;
+pub mod thread_local_accumulator;
+
 pub(crate) mod dense_group_builder;
 pub(crate) mod string_table_builder;
 pub(crate) mod ways_group_builder;
 pub(crate) mod relations_group_builder;
 pub(crate) mod parallel_element_iteration_command;
-pub mod thread_local_accumulator;
 pub(crate) mod element_accumulator;
+pub(crate) mod file_block_metadata;
+pub(crate) mod osm_data;
+pub(crate) mod osm_header;
+pub(crate) mod blob_iterator;
+pub(crate) mod blob_desc;

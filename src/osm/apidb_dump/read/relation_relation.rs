@@ -3,15 +3,14 @@ use crate::osm::apidb_dump::read::relation_record::RelationRecord;
 use crate::osm::apidb_dump::read::relation_tag_record::RelationTagRecord;
 
 #[derive(Debug)]
-pub(crate) struct RelationRelation{
+pub(crate) struct RelationRelation {
     relation: RelationRecord,
     relation_members: Vec<RelationMemberRecord>,
     tags: Vec<RelationTagRecord>,
 }
 
-
 impl RelationRelation {
-    pub(crate)  fn new(
+    pub(crate) fn new(
         relation: RelationRecord,
         relation_members: Vec<RelationMemberRecord>,
         tags: Vec<RelationTagRecord>,

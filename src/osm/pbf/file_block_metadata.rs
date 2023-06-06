@@ -8,7 +8,7 @@ pub struct FileBlockMetadata {
 }
 
 impl FileBlockMetadata {
-    pub fn new(t: String, index: usize) -> FileBlockMetadata {
+    pub(crate) fn new(t: String, index: usize) -> FileBlockMetadata {
         FileBlockMetadata {
             t,
             index,
@@ -16,30 +16,23 @@ impl FileBlockMetadata {
         }
     }
 
-    pub fn t(&self) -> String {
+    #[allow(dead_code)]
+    pub(crate) fn t(&self) -> String {
         self.t.clone()
     }
 
-    pub fn index(&self) -> usize {
+    #[allow(dead_code)]
+    pub(crate) fn index(&self) -> usize {
         self.index
     }
 
-    pub fn bounding_box(&self) -> Option<BoundingBox> {
+    #[allow(dead_code)]
+    pub(crate) fn bounding_box(&self) -> Option<BoundingBox> {
         self.bounding_box.clone()
     }
 
-    pub fn set_bounding_box(&mut self, bounding_box: BoundingBox) {
+    #[allow(dead_code)]
+    pub(crate) fn set_bounding_box(&mut self, bounding_box: BoundingBox) {
         self.bounding_box.replace(bounding_box);
-    }
-
-    pub fn is_sentinel(&self) -> bool {
-        match self.t.as_str() {
-            "Sentinel" => {
-                true
-            }
-            _ => {
-                false
-            }
-        }
     }
 }

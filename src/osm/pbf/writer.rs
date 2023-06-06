@@ -1,7 +1,9 @@
 use std::fs::File;
-use std::io::{Write};
+use std::io::Write;
 use std::path::PathBuf;
+
 use anyhow::{anyhow, Context};
+
 use crate::osm::model::bounding_box::BoundingBox;
 use crate::osm::model::element::Element;
 use crate::osm::pbf::compression_type::CompressionType;
@@ -20,7 +22,6 @@ pub struct Writer {
     element_accumulator: ElementAccumulator,
 }
 
-// TODO: create with a builder or add a configuration parameter or get a Fileinfo as paramter
 impl Writer {
     pub fn from_file_info(
         path: PathBuf,
@@ -63,7 +64,6 @@ impl Writer {
         let optional_features = vec![
             "Sort.Type_then_ID".to_string(),
         ];
-
 
         let writingprogram = Some(program_name.to_string());
         let source = Some(data_source.to_string());
@@ -122,7 +122,7 @@ impl Writer {
                 "OSMData".to_string(),
                 index,
             ),
-            data: OsmData::from_elements(index, elements, None),
+            data: OsmData::from_elements(elements, None),
         };
         self.write_file_block(data)?;
         Ok(())
@@ -134,11 +134,6 @@ impl Writer {
             self.write_elements(elements)?;
         }
         Ok(())
-    }
-
-    // TODO: remove
-    pub fn add_bounding_box(&mut self, bounding_box: Option<BoundingBox>) {
-        self.file_info.merge_bounding_box(bounding_box);
     }
 
     pub fn path(&self) -> &PathBuf {

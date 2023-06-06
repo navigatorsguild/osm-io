@@ -48,9 +48,8 @@ pub(crate) struct WayRelationsIterator {
     next_way_tag_record: Option<WayTagRecord>,
 }
 
-
 impl WayRelationsIterator {
-    pub(crate) fn new(way_relations_reader: &WayRelationsReader) -> Result<WayRelationsIterator, anyhow::Error> {
+    fn new(way_relations_reader: &WayRelationsReader) -> Result<WayRelationsIterator, anyhow::Error> {
         let reader = way_relations_reader.clone();
         let ways_iterator = reader.ways_reader.clone().into_iter();
         let way_nodes_iterator = reader.way_nodes_reader.clone().into_iter();

@@ -14,25 +14,25 @@ impl TryFrom<&str> for RelationMemberType {
         match value {
             "n" => {
                 Ok(RelationMemberType::Node)
-            },
+            }
             "Node" => {
                 Ok(RelationMemberType::Node)
-            },
+            }
             "w" => {
                 Ok(RelationMemberType::Way)
-            },
+            }
             "Way" => {
                 Ok(RelationMemberType::Way)
-            },
+            }
             "r" => {
                 Ok(RelationMemberType::Relation)
-            },
+            }
             "Relation" => {
                 Ok(RelationMemberType::Relation)
-            },
+            }
             _ => {
                 Err(anyhow!("Unknown relation member type: {}", value))
-            },
+            }
         }
     }
 }

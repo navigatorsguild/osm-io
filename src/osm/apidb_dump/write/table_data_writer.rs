@@ -1,8 +1,9 @@
-use std::borrow::{BorrowMut};
+use std::borrow::BorrowMut;
 use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
+
 use anyhow::Context;
 
 pub(crate) struct TableDataWriter {
@@ -22,7 +23,7 @@ impl TableDataWriter {
         })
     }
 
-    pub(crate) fn close(&mut self) -> Result<(), anyhow::Error>{
+    pub(crate) fn close(&mut self) -> Result<(), anyhow::Error> {
         self.writer.write_all("\\.\n".as_bytes()).with_context(|| format!("Problem writing table data footer: {:?}", self.file_path))?;
         self.writer.flush().with_context(|| format!("Problem flushing table data file {:?}", self.file_path))?;
         Ok(())

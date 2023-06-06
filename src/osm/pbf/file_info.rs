@@ -35,6 +35,7 @@ impl FileInfo {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn merge_bounding_box(&mut self, bounding_box: Option<BoundingBox>) {
         if self.bounding_box.is_none() {
             self.bounding_box = bounding_box;

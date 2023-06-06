@@ -3,14 +3,14 @@ use crate::osm::apidb_dump::read::way_record::WayRecord;
 use crate::osm::apidb_dump::read::way_tag_record::WayTagRecord;
 
 #[derive(Debug)]
-pub(crate) struct WayRelation{
+pub(crate) struct WayRelation {
     way: WayRecord,
     way_nodes: Vec<WayNodeRecord>,
     tags: Vec<WayTagRecord>,
 }
 
 impl WayRelation {
-    pub(crate)  fn new(
+    pub(crate) fn new(
         way: WayRecord,
         way_nodes: Vec<WayNodeRecord>,
         tags: Vec<WayTagRecord>,

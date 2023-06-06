@@ -1,7 +1,9 @@
 use std::borrow::Borrow;
 use std::io::Cursor;
 use std::ops::Index;
+
 use prost::Message;
+
 use crate::{osm, osmpbf};
 use crate::osm::model::bounding_box::BoundingBox;
 use crate::osm::model::element::Element;
@@ -13,15 +15,12 @@ use crate::osmpbf::{PrimitiveBlock, PrimitiveGroup};
 
 #[derive(Debug, Default)]
 pub struct OsmData {
-    // TODO: check impact on performance if changed to deq
     elements: Vec<Element>,
-    pub index: usize,
-    pub bounding_box: Option<BoundingBox>,
-    // TODO: revisit pub members.
+    bounding_box: Option<BoundingBox>,
 }
 
 impl OsmData {
-    pub fn new(index: usize, data: Vec<u8>) -> Result<OsmData, anyhow::Error> {
+    pub fn new(data: Vec<u8>) -> Result<OsmData, anyhow::Error> {
         let primitive_block = osmpbf::PrimitiveBlock::decode(&mut Cursor::new(data))?;
         let string_table: Vec<String> = (&primitive_block.stringtable.s).into_iter()
             .map(
@@ -34,7 +33,7 @@ impl OsmData {
         let date_granularity = primitive_block.date_granularity();
         let lat_offset = primitive_block.lat_offset();
         let lon_offset = primitive_block.lon_offset();
-        let mut elements = Vec::<Element>::new();
+        let mut elements = Vec::<Element>::with_capacity(8000);
         for g in &primitive_block.primitivegroup {
             Self::read_dense(&g.dense, &string_table, granularity, date_granularity, lat_offset, lon_offset, &mut elements);
             Self::read_nodes(&g.nodes, &string_table, granularity, date_granularity, lat_offset, lon_offset, &mut elements);
@@ -43,12 +42,12 @@ impl OsmData {
             Self::read_changesets(&g.changesets, &string_table, granularity, date_granularity, lat_offset, lon_offset, &mut elements);
         }
         Ok(
-            OsmData { index, elements, bounding_box: None }
+            OsmData { elements, bounding_box: None }
         )
     }
 
-    pub fn from_elements(index: usize, elements: Vec<Element>, bounding_box: Option<BoundingBox>) -> OsmData {
-        OsmData { index, elements, bounding_box }
+    pub fn from_elements(elements: Vec<Element>, bounding_box: Option<BoundingBox>) -> OsmData {
+        OsmData { elements, bounding_box }
     }
 
     pub fn compute_bounding_box(&self) -> Option<BoundingBox> {
@@ -281,7 +280,6 @@ impl OsmData {
                         }
                     }
                 } else {
-                    // unlikely
                     panic!("Non existing relation member type: {}", relation.types[i]);
                 }
             }
@@ -386,7 +384,6 @@ impl OsmData {
     }
 
     pub fn take_elements(&mut self) -> Vec<Element> {
-        // std::mem::replace(&mut self.elements, Vec::<Element>::default())
         std::mem::take(&mut self.elements)
     }
 }

@@ -2,22 +2,23 @@ use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
 use std::str::FromStr;
+
 use anyhow::anyhow;
 
 use crate::osm::apidb_dump::read::changeset_record::ChangesetRecord;
 use crate::osm::apidb_dump::read::node_record::NodeRecord;
 use crate::osm::apidb_dump::read::node_tag_record::NodeTagRecord;
-use crate::osm::apidb_dump::sql::{parse_sql_bool, parse_sql_null_string, parse_sql_time};
-use crate::osm::apidb_dump::read::table_def::TableDef;
-use crate::osm::apidb_dump::read::table_fields::TableFields;
-use crate::osm::apidb_dump::read::table_record::{TableRecord};
-use crate::osm::apidb_dump::read::user_record::{FormatEnum, UserRecord, UserStatus};
 use crate::osm::apidb_dump::read::relation_member_record::{RelationMemberRecord, RelationMemberType};
 use crate::osm::apidb_dump::read::relation_record::RelationRecord;
 use crate::osm::apidb_dump::read::relation_tag_record::RelationTagRecord;
+use crate::osm::apidb_dump::read::table_def::TableDef;
+use crate::osm::apidb_dump::read::table_fields::TableFields;
+use crate::osm::apidb_dump::read::table_record::TableRecord;
+use crate::osm::apidb_dump::read::user_record::{FormatEnum, UserRecord, UserStatus};
 use crate::osm::apidb_dump::read::way_node_record::WayNodeRecord;
 use crate::osm::apidb_dump::read::way_record::WayRecord;
 use crate::osm::apidb_dump::read::way_tag_record::WayTagRecord;
+use crate::osm::apidb_dump::sql::{parse_sql_bool, parse_sql_null_string, parse_sql_time};
 
 struct RecordBuilder {
     f: fn(&String, &TableDef, usize) -> Option<TableRecord>,
