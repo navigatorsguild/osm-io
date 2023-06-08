@@ -4,13 +4,14 @@ use crate::osm::model::element::Element;
 use crate::osm::pbf::file_block::FileBlock;
 use crate::osm::pbf::file_block_iterator::FileBlockIterator;
 
+/// Iterate over elements in *.osm.pbf file
 pub struct ElementIterator {
     file_block_iterator: FileBlockIterator,
     element_iterator: Option<IntoIter<Element>>,
 }
 
 impl ElementIterator {
-    pub fn new(mut file_block_iterator: FileBlockIterator) -> ElementIterator {
+    pub(crate) fn new(mut file_block_iterator: FileBlockIterator) -> ElementIterator {
         // skip the header
         file_block_iterator.next();
         let element_iterator = Self::create_element_iterator(&mut file_block_iterator);

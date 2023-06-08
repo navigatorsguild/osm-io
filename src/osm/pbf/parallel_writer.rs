@@ -289,6 +289,18 @@ impl Command for WriteBlobCommand {
     }
 }
 
+/// Write *.osm.pbf file while performing concurrently significant parts of work.
+///
+/// The parallel writer accepts somewhat unordered stream of elements, orders these elements,
+/// splits them into FileBlocks and writes them to the target file. The writer is composed from an
+/// ordering thread that maintains a large enough buffer to provide high probability of restoring
+/// the order, multiple encoding threads that do the heavy lifting of encoding the PBF and
+/// compressing, and finally the writing thread tht writes encoded blobs to file.
+/// The [ParallelWriter] uses more memory because of the internal ordering buffers controlled by the
+/// `element_ordering_buffer_size` parameter to constructor. It is limited to use cases where the
+/// processing of each element takes roughly the same time, as in simple filtering tasks or that
+/// elements were ordered before calling the writer.
+/// For example please see ./examples/parallel-bf-io.rs
 pub struct ParallelWriter {
     path: PathBuf,
     file_info: FileInfo,
@@ -299,6 +311,7 @@ pub struct ParallelWriter {
 }
 
 impl ParallelWriter {
+    /// Create [ParallelWriter] from [FileInfo]
     pub fn from_file_info(
         element_ordering_buffer_size: usize,
         file_block_size: usize,
@@ -328,6 +341,9 @@ impl ParallelWriter {
         )
     }
 
+    /// Write the *.osm.pbf header.
+    ///
+    /// Must be called before writing the first element.
     pub fn write_header(&mut self) -> Result<(), anyhow::Error> {
         let writing_pool_guard = self.writing_pool.read()
             .map_err(|e| anyhow!("{}", e))?;
@@ -352,6 +368,7 @@ impl ParallelWriter {
         Ok(())
     }
 
+    /// Write an [Element]
     pub fn write_element(&mut self, element: Element) -> Result<(), anyhow::Error> {
         self.element_ordering_pool
             .read()
@@ -360,6 +377,7 @@ impl ParallelWriter {
         Ok(())
     }
 
+    /// Write list of [Element]s
     pub fn write_elements(&mut self, elements: Vec<Element>) -> Result<(), anyhow::Error> {
         self.element_ordering_pool
             .read()
@@ -368,6 +386,7 @@ impl ParallelWriter {
         Ok(())
     }
 
+    /// Flush internal buffers.
     pub fn close(&mut self) -> Result<(), anyhow::Error> {
         self.flush_element_ordering();
         Self::shutdown(self.element_ordering_pool.clone())?;

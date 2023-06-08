@@ -13,6 +13,9 @@ use crate::osm::model::node::Node;
 use crate::osm::model::relation::{Member, Relation};
 use crate::osm::model::way::Way;
 
+/// Writer of apidb schema dump
+///
+/// Writer of apidb schema dump that can be loaded using pg_restore into a Postgresql database
 pub struct Writer {
     #[allow(dead_code)]
     output_path: PathBuf,
@@ -22,6 +25,11 @@ pub struct Writer {
 }
 
 impl Writer {
+    /// Create a new [Writer]
+    ///
+    /// * output_path - directory to write the output to. Must contain enough space which is very
+    /// difficult to calculate because the *.osm.pbf input is so condensed that 1GB of input can
+    /// easily transform into 100GB of output.
     pub fn new(output_path: PathBuf, compression_level: i8) -> Result<Writer, anyhow::Error> {
         Self::create_result_dir(&output_path)?;
         let writers = TableDataWriters::new(load_template_mapping()?, &output_path)?;
@@ -34,6 +42,7 @@ impl Writer {
         )
     }
 
+    /// Write an element
     pub fn write_element(&mut self, element: Element) -> Result<(), anyhow::Error> {
         match element {
             Element::Node { node } => {
@@ -345,6 +354,7 @@ impl Writer {
         Ok(())
     }
 
+    /// Flush internal buffers and add file terminators
     pub fn close(&mut self) -> Result<(), Error> {
         self.writers.flush_buffers()?;
         self.write_users()?;
@@ -353,6 +363,7 @@ impl Writer {
         Ok(())
     }
 
+    /// Return table to file mapping for diagnostics
     pub fn table_mapping(&self) -> Vec<String> {
         Vec::new()
     }

@@ -1,0 +1,79 @@
+{
+    "file": {
+        "name": "./tests/fixtures/niue-230109.osm.pbf",
+        "format": "PBF",
+        "compression": "none",
+        "size": 402218
+    },
+    "header": {
+        "boxes": [
+            [
+                -170.1595029,
+                -19.3548665,
+                -169.5647229,
+                -18.7534559
+            ]
+        ],
+        "with_history": false,
+        "option": {
+            "generator": "osmium/1.14.0",
+            "pbf_dense_nodes": "true",
+            "pbf_optional_feature_0": "Sort.Type_then_ID",
+            "sorting": "Type_then_ID"
+        }
+    },
+    "data": {
+        "bbox": [
+            -170.1595029,
+            -19.3548665,
+            -169.5647229,
+            -18.7534559
+        ],
+        "timestamp": {
+            "first": "2007-12-23T02:26:22Z",
+            "last": "2023-01-02T10:46:42Z"
+        },
+        "objects_ordered": true,
+        "multiple_versions": false,
+        "crc32": "93fed8b1",
+        "count": {
+            "changesets": 0,
+            "nodes": 41816,
+            "ways": 3007,
+            "relations": 125
+        },
+        "minid": {
+            "changesets": 0,
+            "nodes": 184252266,
+            "ways": 17781996,
+            "relations": 1556961
+        },
+        "maxid": {
+            "changesets": 0,
+            "nodes": 10106010382,
+            "ways": 1104370489,
+            "relations": 12836205
+        },
+        "buffers": {
+            "count": 61,
+            "size": 3755208,
+            "capacity": 3997696
+        },
+        "metadata": {
+            "all_objects": {
+                "version": true,
+                "timestamp": true,
+                "changeset": true,
+                "user": true,
+                "uid": true
+            },
+            "some_objects": {
+                "version": true,
+                "timestamp": true,
+                "changeset": true,
+                "user": true,
+                "uid": true
+            }
+        }
+    }
+}

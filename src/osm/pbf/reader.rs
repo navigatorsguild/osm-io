@@ -20,8 +20,21 @@ pub struct Reader {
     info: FileInfo,
 }
 
+/// *.osm.pbf file reader
+///
+/// Prepare the *.osm.pbf file for reading. The actual reading is performed by associated iterators.
 impl Reader {
-    pub fn new(path: PathBuf) -> Result<Reader, anyhow::Error> {
+    /// Create a new Reader
+    ///
+    /// * path - a path to a valid *.osm.pbf file
+    /// Example:
+    /// ```
+    /// use std::path::PathBuf;
+    /// use osm_io::osm::pbf::reader::Reader;
+    /// let input_path = PathBuf::from("./planet.osm.pbf");
+    /// let reader = Reader::new(&input_path);
+    /// ```
+    pub fn new(path: &PathBuf) -> Result<Reader, anyhow::Error> {
         let supported_features = vec![
             "OsmSchema-V0.6".to_string(),
             "DenseNodes".to_string(),
@@ -46,7 +59,6 @@ impl Reader {
             &reader.info().required_features(),
         )?;
 
-
         Ok(
             reader
         )
@@ -56,6 +68,7 @@ impl Reader {
         BlobIterator::new(self.path.clone())
     }
 
+    /// Low level [FileBlockIterator] used to access the sequence of underlying PBF blocks
     pub fn blocks(&self) -> Result<FileBlockIterator, anyhow::Error> {
         match self.blobs() {
             Ok(blob_iterator) => {
@@ -69,6 +82,43 @@ impl Reader {
         }
     }
 
+    /// Iterator used to iterate over elements.
+    /// Example:
+    /// ```
+    /// use std::path::PathBuf;
+    /// use osm_io::osm::model::element::Element;
+    /// use osm_io::osm::pbf;
+    /// fn example() -> Result<(), anyhow::Error> {
+    ///     let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
+    ///     let reader = pbf::reader::Reader::new(&input_path)?;
+    ///
+    ///     let mut nodes = 0 as usize;
+    ///     let mut ways = 0 as usize;
+    ///     let mut relations = 0 as usize;
+    ///
+    ///     for element in reader.elements()? {
+    ///         match element {
+    ///             Element::Node { node } => {
+    ///                 nodes += 1;
+    ///             }
+    ///             Element::Way { way } => {
+    ///                 ways += 1;
+    ///             }
+    ///             Element::Relation { relation } => {
+    ///                 relations += 1;
+    ///             }
+    ///             Element::Sentinel => {
+    ///             }
+    ///         }
+    ///     }
+    ///
+    ///     println!("nodes: {}", nodes);
+    ///     println!("ways: {}", ways);
+    ///     println!("relations: {}", relations);
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn elements(&self) -> Result<ElementIterator, anyhow::Error> {
         match self.blocks() {
             Ok(file_block_iterator) => {
@@ -82,6 +132,52 @@ impl Reader {
         }
     }
 
+    /// Parallel iteration over elements in a *.osm.pbf file
+    ///
+    /// Note that because of the parallel access the order of elements enforced by *.osm.pbf format
+    /// is lost.
+    /// Example:
+    /// ```
+    /// use std::path::PathBuf;
+    /// use std::sync::Arc;
+    /// use std::sync::atomic::{AtomicUsize, Ordering};
+    /// use osm_io::osm::model::element::Element;
+    /// use osm_io::osm::pbf;
+    /// fn example() -> Result<(), anyhow::Error> {
+    ///     let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
+    ///     let reader = pbf::reader::Reader::new(&input_path)?;
+    ///
+    ///     let nodes = Arc::new(AtomicUsize::new(0));
+    ///     let ways = Arc::new(AtomicUsize::new(0));
+    ///     let relations = Arc::new(AtomicUsize::new(0));
+    ///
+    ///     let nodes_clone = nodes.clone();
+    ///     let ways_clone = ways.clone();
+    ///     let relations_clone = relations.clone();
+    ///
+    ///     reader.parallel_for_each(4, move |element| {
+    ///         match element {
+    ///             Element::Node { node: _ } => {
+    ///                 nodes.fetch_add(1, Ordering::Relaxed);
+    ///             }
+    ///             Element::Way { .. } => {
+    ///                 ways.fetch_add(1, Ordering::Relaxed);
+    ///             }
+    ///             Element::Relation { .. } => {
+    ///                 relations.fetch_add(1, Ordering::Relaxed);
+    ///             }
+    ///             Element::Sentinel => {}
+    ///             }
+    ///             Ok(())
+    ///         },
+    ///     )?;
+    ///
+    ///     println!("nodes: {}", nodes_clone.load(Ordering::Relaxed));
+    ///     println!("ways: {}", ways_clone.load(Ordering::Relaxed));
+    ///     println!("relations: {}", relations_clone.load(Ordering::Relaxed));
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn parallel_for_each(&self, tasks: usize, f: impl Fn(Element) -> Result<(), anyhow::Error> + Send + Sync + 'static) -> Result<(), anyhow::Error> {
         let mut iteration_pool = ThreadPoolBuilder::new()
             .with_tasks(tasks)
@@ -126,6 +222,7 @@ impl Reader {
         }
     }
 
+    /// List the features supported by this [Reader]
     pub fn supported_features(&self) -> &Vec<String> {
         &self.supported_features
     }

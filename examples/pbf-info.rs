@@ -8,7 +8,7 @@ use osm_io::osm::pbf;
 /// Display PBF file informationn
 pub fn main() -> Result<(), anyhow::Error> {
     let input_path = PathBuf::from("./tests/fixtures/niue-230225-geofabrik.osm.pbf");
-    let reader = pbf::reader::Reader::new(input_path.clone())?;
+    let reader = pbf::reader::Reader::new(&input_path)?;
 
     let info = reader.info();
     println!("PBF file: {}", input_path.to_string_lossy());

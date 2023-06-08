@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::fs;
 use std::ops::{AddAssign, SubAssign};
 use std::path::PathBuf;
+use anyhow::{anyhow, Context};
 
 use regex::Regex;
 use text_file_sort::sort::Sort;
@@ -10,16 +11,29 @@ use crate::osm::apidb_dump::read::element_iterator::ElementIterator;
 use crate::osm::apidb_dump::read::table_def::TableDef;
 use crate::osm::apidb_dump::read::table_fields::TableFields;
 
+/// Reader of apidb schema dump produced by pg_dump
 pub struct Reader {
     tables: HashMap<String, TableDef>,
 }
 
 impl Reader {
+    /// Create a new [Reader]
+    ///
+    /// * input_path - a path to directory that contains apidb schema dump produced by pg_dump with
+    /// directory format. For example:
+    /// ```bash
+    ///  pg_dump --host localhost --port 5432 --username openstreetmap --no-password --file /result --format d -d openstreetmap --compress 0 --table public.nodes --table public.node_tags --table public.ways --table public.way_nodes --table public.way_tags --table public.relations --table public.relation_members --table public.relation_tags --table public.changesets --table public.users
+    /// ```
+    /// The input is sorted using primary keys for each table found in input_path/toc.dat which may
+    /// take significant time depending on the size of the input
+    /// * tmp_path - location used by the sorting algorithm for intermediate and final result. Should
+    /// have space for at least 2.2 * input size
     pub fn new(input_path: PathBuf, tmp_path: PathBuf) -> Result<Reader, anyhow::Error> {
         let mut tables: HashMap<String, TableDef> = HashMap::new();
 
         let toc_path = input_path.join("toc.dat");
-        let toc = fs::read(toc_path)?;
+        let toc = fs::read(&toc_path)
+            .with_context(|| anyhow!("path: {}", toc_path.to_string_lossy()))?;
         let raw_table_defs = Self::get_table_def_strings(&toc);
         // COPY public.node_tags (node_id, version, k, v) FROM stdin
         let re = Regex::new("^([^ ]+) \\((.+)\\)$").unwrap();
@@ -118,6 +132,11 @@ impl Reader {
         result
     }
 
+    /// Create iterator over the elements.
+    ///
+    /// The behaviour is similar to that of [osm::pbf::element_iterator::ElementIterator] with the
+    /// distinction that [Element::Sentinel] is produced after completing each type, that is Node,
+    /// Way, Relation.
     pub fn elements(&self) -> Result<ElementIterator, anyhow::Error> {
         ElementIterator::new(self.tables.clone())
     }

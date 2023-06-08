@@ -19,12 +19,12 @@ fn test_pbf_reader() -> Result<(), anyhow::Error> {
     SimpleLogger::new().init()?;
     log::info!("Started OSM PBF reader test");
     common::setup();
-    let input_path = PathBuf::from("./tests/fixtures/niue-230225-geofabrik.osm.pbf");
-    let fixture_analysis_path = PathBuf::from("./tests/fixtures/niue-230225-geofabrik.osm.pbf.analysis.json");
+    let input_path = PathBuf::from("./tests/fixtures/niue-230109.osm.pbf");
+    let fixture_analysis_path = PathBuf::from("./tests/fixtures/niue-230109.osm.pbf.analysis.json");
 
     let fixture_analysis = read_fixture_analysis(&fixture_analysis_path);
 
-    let reader = Reader::new(input_path)?;
+    let reader = Reader::new(&input_path)?;
 
     let mut header_blocks = 0;
     let mut data_blocks = 0;

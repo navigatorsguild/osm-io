@@ -9,6 +9,7 @@ thread_local! {
     static ACCUMULATORS: RefCell<HashMap<String, Vec<Element>>> = RefCell::new(HashMap::new());
 }
 
+/// Accumulate Elements to avoid calling [ParallelWriter] for each element
 pub struct ThreadLocalAccumulator {
     id: String,
     capacity: usize,

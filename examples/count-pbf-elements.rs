@@ -12,8 +12,8 @@ pub fn main() -> Result<(), anyhow::Error> {
     log::info!("Started count pbf elements");
     let mut stopwatch = StopWatch::new();
     stopwatch.start();
-    let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
-    let reader = pbf::reader::Reader::new(input_path)?;
+    let input_path = PathBuf::from("./tests/fixtures/niue-230109.osm.pbf");
+    let reader = pbf::reader::Reader::new(&input_path)?;
 
     let mut nodes = 0 as usize;
     let mut ways = 0 as usize;

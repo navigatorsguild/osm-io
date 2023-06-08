@@ -16,15 +16,15 @@ mod common;
 fn test_pbf_reader_apidb_dump_writer_pipe() -> Result<(), anyhow::Error>{
     SimpleLogger::new().init().unwrap();
     common::setup();
-    let input_path = PathBuf::from("./tests/fixtures/history-malta-230109.osm.pbf");
-    let output_path = PathBuf::from("./target/results/history-malta-230109");
-    let fixture_analysis_path = PathBuf::from("./tests/fixtures/history-malta-230109.osm.pbf.analysis.json");
+    let input_path = PathBuf::from("./tests/fixtures/history-niue-230109.osm.pbf");
+    let output_path = PathBuf::from("./target/results/history-niue-230109");
+    let fixture_analysis_path = PathBuf::from("./tests/fixtures/history-niue-230109.osm.pbf.analysis.json");
 
     let mut stopwatch = StopWatch::new();
     stopwatch.start();
     log::info!("Started pbf reader apidb dump writer pipeline test, time: {}", stopwatch);
 
-    let pbf_reader = PbfReader::new(input_path).unwrap();
+    let pbf_reader = PbfReader::new(&input_path).unwrap();
 
     let mut apidb_dump_writer = ApiDbDumpWriter::new(output_path.clone(), 0)?;
     for element in pbf_reader.elements()? {

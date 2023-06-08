@@ -1,12 +1,13 @@
 use crate::osm::pbf::blob_iterator::BlobIterator;
 use crate::osm::pbf::file_block::FileBlock;
 
+/// Iterate over [FileBlock]s in a *.osm.pbf file
 pub struct FileBlockIterator {
     blob_iterator: BlobIterator,
 }
 
 impl FileBlockIterator {
-    pub fn new(blob_iterator: BlobIterator) -> FileBlockIterator {
+    pub(crate) fn new(blob_iterator: BlobIterator) -> FileBlockIterator {
         FileBlockIterator {
             blob_iterator,
         }

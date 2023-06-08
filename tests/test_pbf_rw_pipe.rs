@@ -13,15 +13,15 @@ mod common;
 fn test_pbf_rw_pipe() -> Result<(), anyhow::Error> {
     SimpleLogger::new().init().unwrap();
     common::setup();
-    let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
-    let output_path = PathBuf::from("./target/results/malta-230109.osm.pbf");
-    let fixture_analysis_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf.osm.pbf.analysis.json");
+    let input_path = PathBuf::from("./tests/fixtures/niue-230109.osm.pbf");
+    let output_path = PathBuf::from("./target/results/niue-230109.osm.pbf");
+    let fixture_analysis_path = PathBuf::from("./tests/fixtures/niue-230109.osm.pbf.analysis.json");
 
     let mut stopwatch = StopWatch::new();
     stopwatch.start();
     log::info!("Started OSM PBF rw pipe test, time: {stopwatch}");
 
-    let reader = Reader::new(input_path)?;
+    let reader = Reader::new(&input_path)?;
     let mut file_info = reader.info().clone();
     file_info.with_writingprogram(&Some("rw-pipe-test-writer".to_string()));
     file_info.with_source(&Some("from fixture".to_string()));
