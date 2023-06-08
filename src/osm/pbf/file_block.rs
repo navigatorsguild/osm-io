@@ -18,6 +18,7 @@ use crate::osm::pbf::osm_header::OsmHeader;
 use crate::osmpbf::{Blob, BlobHeader};
 use crate::osmpbf::blob::Data;
 
+/// A header or data file block in *.osm.pbf file
 #[derive(Debug)]
 pub enum FileBlock {
     Header {

@@ -14,9 +14,9 @@ pub fn main() -> Result<(), anyhow::Error> {
     log::info!("Started pbf io pipeline");
     let mut stopwatch = StopWatch::new();
     stopwatch.start();
-    let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
-    let output_path = PathBuf::from("./target/results/malta-230109.osm.pbf");
-    let reader = pbf::reader::Reader::new(input_path)?;
+    let input_path = PathBuf::from("./tests/fixtures/niue-230109.osm.pbf");
+    let output_path = PathBuf::from("./target/results/niue-230109.osm.pbf");
+    let reader = pbf::reader::Reader::new(&input_path)?;
     let mut file_info = FileInfo::default();
     file_info.with_writingprogram_str("pbf-io-example");
     let mut writer = pbf::writer::Writer::from_file_info(

@@ -1,0 +1,72 @@
+{
+    "file": {
+        "name": "./tests/fixtures/history-niue-230109.osm.pbf",
+        "format": "PBF",
+        "compression": "none",
+        "size": 562252
+    },
+    "header": {
+        "boxes": [],
+        "with_history": true,
+        "option": {
+            "generator": "osmium/1.14.0",
+            "pbf_dense_nodes": "true",
+            "pbf_optional_feature_0": "Sort.Type_then_ID",
+            "sorting": "Type_then_ID"
+        }
+    },
+    "data": {
+        "bbox": [
+            -170.1595029,
+            -19.3548665,
+            -169.5647229,
+            -18.7534559
+        ],
+        "timestamp": {
+            "first": "2007-12-23T02:25:57Z",
+            "last": "2023-01-02T10:46:42Z"
+        },
+        "objects_ordered": true,
+        "multiple_versions": true,
+        "crc32": "269d3d86",
+        "count": {
+            "changesets": 0,
+            "nodes": 61628,
+            "ways": 4728,
+            "relations": 197
+        },
+        "minid": {
+            "changesets": 0,
+            "nodes": 184252266,
+            "ways": 17781996,
+            "relations": 1556961
+        },
+        "maxid": {
+            "changesets": 0,
+            "nodes": 10106010382,
+            "ways": 1104370489,
+            "relations": 12836205
+        },
+        "buffers": {
+            "count": 105,
+            "size": 6513600,
+            "capacity": 6881280
+        },
+        "metadata": {
+            "all_objects": {
+                "version": true,
+                "timestamp": true,
+                "changeset": true,
+                "user": true,
+                "uid": true
+            },
+            "some_objects": {
+                "version": true,
+                "timestamp": true,
+                "changeset": true,
+                "user": true,
+                "uid": true
+            }
+        }
+    }
+}

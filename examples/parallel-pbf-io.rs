@@ -15,9 +15,9 @@ pub fn main() -> Result<(), anyhow::Error> {
     log::info!("Started parallel pbf io pipeline");
     let mut stopwatch = StopWatch::new();
     stopwatch.start();
-    let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
-    let output_path = PathBuf::from("./target/results/parallel-malta-230109.osm.pbf");
-    let reader = pbf::reader::Reader::new(input_path)?;
+    let input_path = PathBuf::from("./tests/fixtures/niue-230109.osm.pbf");
+    let output_path = PathBuf::from("./target/results/parallel-niue-230109.osm.pbf");
+    let reader = pbf::reader::Reader::new(&input_path)?;
     let mut file_info = reader.info().clone();
     file_info.with_writingprogram_str("parallel-pbf-io-example");
     let parallel_writer = Arc::new(

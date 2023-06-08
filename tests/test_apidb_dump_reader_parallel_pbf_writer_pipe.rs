@@ -12,13 +12,11 @@ fn test_apidb_dump_reader_parallel_pbf_writer_pipe() -> Result<(), anyhow::Error
     SimpleLogger::new().init()?;
     log::info!("Started apidb dump reader parallel pbf writer pipeline test");
     common::setup();
-    let input_path = PathBuf::from("./tests/fixtures/malta-230109-modified-history");
-    let output_path = PathBuf::from("./target/results/malta-230109-modified-history.osm.pbf");
-    let tmp_path = PathBuf::from("./target/results/malta-230109-modified-history");
-    // the malta-230109-modified-history.osm.pbf.analysis.json was created from test results because
-    // for now there is no way to import into DB a complete history from PBF..
+    let input_path = PathBuf::from("./tests/fixtures/history-niue-230109");
+    let output_path = PathBuf::from("./target/results/history-niue-230109.osm.pbf");
+    let tmp_path = PathBuf::from("./target/results/history-niue-230109");
     // TODO: rewrite the test when history import is available
-    let fixture_analysis_path = PathBuf::from("./tests/fixtures/malta-230109-modified-history.osm.pbf.analysis.json");
+    let fixture_analysis_path = PathBuf::from("./tests/fixtures/history-niue-230109.osm.pbf.analysis.json");
 
     let reader = Reader::new(input_path, tmp_path)?;
     let info = FileInfo::new(
