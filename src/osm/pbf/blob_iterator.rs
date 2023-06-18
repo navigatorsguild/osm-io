@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::ops::AddAssign;
 use std::path::PathBuf;
+use anyhow::{anyhow, Context};
 
 use prost::Message;
 
@@ -16,7 +17,8 @@ pub struct BlobIterator {
 
 impl BlobIterator {
     pub fn new(path: PathBuf) -> Result<BlobIterator, anyhow::Error> {
-        let file = File::open(path.clone())?;
+        let file = File::open(path.clone())
+            .with_context(|| anyhow!("path: {}", path.to_string_lossy()))?;
         Ok(
             BlobIterator {
                 path: path.clone(),

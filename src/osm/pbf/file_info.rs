@@ -139,6 +139,14 @@ impl FileInfo {
     pub fn with_osmosis_replication_base_url(&mut self, osmosis_replication_base_url: &Option<String>) {
         self.osmosis_replication_base_url = osmosis_replication_base_url.clone();
     }
+
+    pub fn required(&self, feature: &str) -> bool {
+        self.required_features.contains(&feature.to_string())
+    }
+
+    pub fn optional(&self, feature: &str) -> bool {
+        self.optional_features.contains(&feature.to_string())
+    }
 }
 
 impl Default for FileInfo {

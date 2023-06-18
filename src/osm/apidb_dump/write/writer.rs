@@ -6,6 +6,7 @@ use anyhow::{Context, Error};
 use escape_string::escape;
 
 use crate::osm::apidb_dump::sql::{calculate_tile, to_sql_bool, to_sql_time, to_sql_time_micro};
+use crate::osm::apidb_dump::write::current_object::{CurrentObjectLine, CurrentObjectLines};
 use crate::osm::apidb_dump::write::table_data_writers::TableDataWriters;
 use crate::osm::apidb_dump::write::toc::{load_template_mapping, write_toc};
 use crate::osm::model::element::Element;
@@ -22,6 +23,14 @@ pub struct Writer {
     #[allow(dead_code)]
     compression_level: i8,
     writers: TableDataWriters,
+    current_node_line: CurrentObjectLine,
+    current_node_tag_lines: CurrentObjectLines,
+    current_way_line: CurrentObjectLine,
+    current_way_node_lines: CurrentObjectLines,
+    current_way_tag_lines: CurrentObjectLines,
+    current_relation_line: CurrentObjectLine,
+    current_relation_member_lines: CurrentObjectLines,
+    current_relation_tag_lines: CurrentObjectLines,
 }
 
 impl Writer {
@@ -38,6 +47,14 @@ impl Writer {
                 output_path,
                 compression_level,
                 writers,
+                current_node_line: CurrentObjectLine::new(),
+                current_node_tag_lines: CurrentObjectLines::new(),
+                current_way_line: CurrentObjectLine::new(),
+                current_way_node_lines: CurrentObjectLines::new(),
+                current_way_tag_lines: CurrentObjectLines::new(),
+                current_relation_line: CurrentObjectLine::new(),
+                current_relation_member_lines: CurrentObjectLines::new(),
+                current_relation_tag_lines: CurrentObjectLines::new(),
             }
         )
     }
@@ -65,47 +82,74 @@ impl Writer {
 
         // public.current_nodes (id, latitude, longitude, changeset_id, visible, "timestamp", tile, version)
         // template context: 4228.dat
-        let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
-                           node.id(),
-                           node.coordinate().lat7(),
-                           node.coordinate().lon7(),
-                           node.changeset(),
-                           to_sql_bool(node.visible()),
-                           to_sql_time(node.timestamp()),
-                           calculate_tile(node.coordinate().lat(), node.coordinate().lon()),
-                           node.version()
+        let current_node_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                                        node.id(),
+                                        node.coordinate().lat7(),
+                                        node.coordinate().lon7(),
+                                        node.changeset(),
+                                        to_sql_bool(node.visible()),
+                                        to_sql_time(node.timestamp()),
+                                        calculate_tile(node.coordinate().lat(), node.coordinate().lon()),
+                                        node.version()
         );
 
-        self.writers.current_nodes.writer().write(line.as_bytes())?;
-        self.writers.current_nodes.writer().write("\n".as_bytes())?;
+        match self.current_node_line.set_last_line(current_node_line, node.id(), node.visible()) {
+            None => {}
+            Some(current_node_line) => {
+                self.writers.current_nodes.writer().write(current_node_line.as_bytes())?;
+            }
+        }
+        self.current_node_line.set_last_id(node.id());
 
         // public.nodes (node_id, latitude, longitude, changeset_id, visible, "timestamp", tile, version, redaction_id)
         // template context: 4260.dat
-        self.writers.nodes.writer().write(line.as_bytes())?;
-        self.writers.nodes.writer().write("\t\\N\n".as_bytes())?;
+        let node_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t\\N\n",
+                                node.id(),
+                                node.coordinate().lat7(),
+                                node.coordinate().lon7(),
+                                node.changeset(),
+                                to_sql_bool(node.visible()),
+                                to_sql_time(node.timestamp()),
+                                calculate_tile(node.coordinate().lat(), node.coordinate().lon()),
+                                node.version()
+        );
 
+        self.writers.nodes.writer().write(node_line.as_bytes())?;
+
+        let mut current_node_tag_lines = Vec::new();
         let tags = node.take_tags();
         for tag in tags {
             // public.node_tags (node_id, version, k, v)
             // template context: 4259.dat
             let escaped_tag = escape(&tag.v());
-            let line = format!("{}\t{}\t{}\t{}\n",
-                               node.id(),
-                               node.version(),
-                               tag.k(),
-                               escaped_tag,
+            let node_tag_line = format!("{}\t{}\t{}\t{}\n",
+                                        node.id(),
+                                        node.version(),
+                                        tag.k(),
+                                        escaped_tag,
             );
-            self.writers.node_tags.writer().write(line.as_bytes())?;
+            self.writers.node_tags.writer().write(node_tag_line.as_bytes())?;
 
             // public.current_node_tags (node_id, k, v)
             // template context: 4227.dat
-            let line = format!("{}\t{}\t{}\n",
-                               node.id(),
-                               tag.k(),
-                               escaped_tag,
+            let current_node_tag_line = format!("{}\t{}\t{}\n",
+                                                node.id(),
+                                                tag.k(),
+                                                escaped_tag,
             );
-            self.writers.current_node_tags.writer().write(line.as_bytes())?;
+            // self.writers.current_node_tags.writer().write(current_node_tag_line.as_bytes())?;
+            current_node_tag_lines.push(current_node_tag_line);
         }
+
+        match self.current_node_tag_lines.set_last_lines(current_node_tag_lines, node.id(), node.visible()) {
+            None => {}
+            Some(current_node_tag_lines) => {
+                for current_node_tag_line in current_node_tag_lines {
+                    self.writers.current_node_tags.writer().write(current_node_tag_line.as_bytes())?;
+                }
+            }
+        }
+        self.current_node_tag_lines.set_last_id(node.id());
 
         Ok(())
     }
@@ -114,71 +158,101 @@ impl Writer {
         self.writers.user_index_buffer.insert(way.uid() as i64, way.take_user());
         self.writers.changeset_user_index_buffer.insert(way.changeset(), way.uid() as i64);
 
+
+        let mut current_way_node_lines = Vec::new();
         for (sequence_id, node_id) in way.refs().iter().enumerate() {
             // public.current_way_nodes (way_id, node_id, sequence_id)
             // template context: 4234.dat
-            let line = format!("{}\t{}\t{}\n",
-                               way.id(),
-                               node_id,
-                               sequence_id + 1
+            let current_way_node_line = format!("{}\t{}\t{}\n",
+                                                way.id(),
+                                                node_id,
+                                                sequence_id + 1
             );
-            self.writers.current_way_nodes.writer().write(line.as_bytes())?;
+            current_way_node_lines.push(current_way_node_line);
 
             // public.way_nodes (way_id, node_id, version, sequence_id)
             // template context: 4292.dat
-            let line = format!("{}\t{}\t{}\t{}\n",
-                               way.id(),
-                               node_id,
-                               way.version(),
-                               sequence_id + 1
+            let way_node_line = format!("{}\t{}\t{}\t{}\n",
+                                        way.id(),
+                                        node_id,
+                                        way.version(),
+                                        sequence_id + 1
             );
-            self.writers.way_nodes.writer().write(line.as_bytes())?;
+            self.writers.way_nodes.writer().write(way_node_line.as_bytes())?;
         }
 
+        match self.current_way_node_lines.set_last_lines(current_way_node_lines, way.id(), way.visible()) {
+            None => {}
+            Some(current_way_node_lines) => {
+                for current_way_node_line in current_way_node_lines {
+                    self.writers.current_way_nodes.writer().write(current_way_node_line.as_bytes())?;
+                }
+            }
+        }
+        self.current_way_node_lines.set_last_id(way.id());
+
+
+        let mut current_way_tag_lines = Vec::new();
         for tag in way.take_tags() {
             // public.current_way_tags (way_id, k, v)
             // template context: 4235.dat
             let escaped_tag = escape_string::escape(tag.v());
-            let line = format!("{}\t{}\t{}\n",
-                               way.id(),
-                               tag.k(),
-                               escaped_tag,
+            let current_way_tag_line = format!("{}\t{}\t{}\n",
+                                               way.id(),
+                                               tag.k(),
+                                               escaped_tag,
             );
-            self.writers.current_way_tags.writer().write(line.as_bytes())?;
+            current_way_tag_lines.push(current_way_tag_line);
 
             // public.way_tags (way_id, k, v, version)
             // template context: 4293.dat
-            let line = format!("{}\t{}\t{}\t{}\n",
-                               way.id(),
-                               tag.k(),
-                               escaped_tag,
-                               way.version()
+            let way_tag_line_line = format!("{}\t{}\t{}\t{}\n",
+                                            way.id(),
+                                            tag.k(),
+                                            escaped_tag,
+                                            way.version()
             );
-            self.writers.way_tags.writer().write(line.as_bytes())?;
+            self.writers.way_tags.writer().write(way_tag_line_line.as_bytes())?;
         }
 
+        match self.current_way_tag_lines.set_last_lines(current_way_tag_lines, way.id(), way.visible()) {
+            None => {}
+            Some(current_way_tag_lines) => {
+                for current_way_tag_line in current_way_tag_lines {
+                    self.writers.current_way_tags.writer().write(current_way_tag_line.as_bytes())?;
+                }
+            }
+        }
+        self.current_way_tag_lines.set_last_id(way.id());
 
         // public.current_ways (id, changeset_id, "timestamp", visible, version)
         // template context: 4236.dat
-        let line = format!("{}\t{}\t{}\t{}\t{}\n",
-                           way.id(),
-                           way.changeset(),
-                           to_sql_time(way.timestamp()),
-                           to_sql_bool(way.visible()),
-                           way.version(),
+        let current_way_line = format!("{}\t{}\t{}\t{}\t{}\n",
+                                       way.id(),
+                                       way.changeset(),
+                                       to_sql_time(way.timestamp()),
+                                       to_sql_bool(way.visible()),
+                                       way.version(),
         );
-        self.writers.current_ways.writer().write(line.as_bytes())?;
+
+        match self.current_way_line.set_last_line(current_way_line, way.id(), way.visible()) {
+            None => {}
+            Some(current_way_line) => {
+                self.writers.current_ways.writer().write(current_way_line.as_bytes())?;
+            }
+        }
+        self.current_way_line.set_last_id(way.id());
 
         // public.ways (way_id, changeset_id, "timestamp", version, visible, redaction_id)
         // template context: 4294.dat"
-        let line = format!("{}\t{}\t{}\t{}\t{}\t\\N\n",
-                           way.id(),
-                           way.changeset(),
-                           to_sql_time(way.timestamp()),
-                           way.version(),
-                           to_sql_bool(way.visible()),
+        let way_line = format!("{}\t{}\t{}\t{}\t{}\t\\N\n",
+                               way.id(),
+                               way.changeset(),
+                               to_sql_time(way.timestamp()),
+                               way.version(),
+                               to_sql_bool(way.visible()),
         );
-        self.writers.ways.writer().write(line.as_bytes())?;
+        self.writers.ways.writer().write(way_line.as_bytes())?;
 
         Ok(())
     }
@@ -186,6 +260,7 @@ impl Writer {
     fn write_relation(&mut self, mut relation: Relation) -> Result<(), Error> {
         self.writers.user_index_buffer.insert(relation.uid() as i64, relation.take_user());
         self.writers.changeset_user_index_buffer.insert(relation.changeset(), relation.uid() as i64);
+        let mut current_relation_member_lines = Vec::new();
         for (sequence_id, member) in relation.members().iter().enumerate() {
             let (member_id, member_role, member_type) = match member {
                 Member::Node { member } => {
@@ -202,71 +277,100 @@ impl Writer {
             // public.current_relation_members (relation_id, member_type, member_id, member_role, sequence_id)
             // template context: 4230.dat
             let escaped_role = escape_string::escape(member_role);
-            let line = format!("{}\t{}\t{}\t{}\t{}\n",
-                               relation.id(),
-                               member_type,
-                               member_id,
-                               escaped_role,
-                               sequence_id + 1,
+            let current_relation_member_line = format!("{}\t{}\t{}\t{}\t{}\n",
+                                                       relation.id(),
+                                                       member_type,
+                                                       member_id,
+                                                       escaped_role,
+                                                       sequence_id + 1,
             );
-            self.writers.current_relation_members.writer().write(line.as_bytes())?;
+            current_relation_member_lines.push(current_relation_member_line);
 
             // public.relation_members (relation_id, member_type, member_id, member_role, version, sequence_id)
             // template context: 4277.dat
-            let line = format!("{}\t{}\t{}\t{}\t{}\t{}\n",
-                               relation.id(),
-                               member_type,
-                               member_id,
-                               escaped_role,
-                               relation.version(),
-                               sequence_id + 1,
+            let relation_member_line = format!("{}\t{}\t{}\t{}\t{}\t{}\n",
+                                               relation.id(),
+                                               member_type,
+                                               member_id,
+                                               escaped_role,
+                                               relation.version(),
+                                               sequence_id + 1,
             );
-            self.writers.relation_members.writer().write(line.as_bytes())?;
+            self.writers.relation_members.writer().write(relation_member_line.as_bytes())?;
         }
 
+        match self.current_relation_member_lines.set_last_lines(current_relation_member_lines, relation.id(), relation.visible()) {
+            None => {}
+            Some(current_relation_member_lines) => {
+                for current_relation_member_line in current_relation_member_lines {
+                    self.writers.current_relation_members.writer().write(current_relation_member_line.as_bytes())?;
+                }
+            }
+        }
+        self.current_relation_member_lines.set_last_id(relation.id());
+
+        let mut current_relation_tag_lines = Vec::new();
         for tag in relation.take_tags() {
             // public.current_relation_tags (relation_id, k, v)
             // template context: 4231.dat
             let escaped_tag = escape_string::escape(&tag.v());
-            let line = format!("{}\t{}\t{}\n",
-                               relation.id(),
-                               tag.k(),
-                               escaped_tag,
+            let current_relation_tag_line = format!("{}\t{}\t{}\n",
+                                                    relation.id(),
+                                                    tag.k(),
+                                                    escaped_tag,
             );
-            self.writers.current_relation_tags.writer().write(line.as_bytes())?;
+            current_relation_tag_lines.push(current_relation_tag_line);
 
             // public.relation_tags (relation_id, k, v, version)
             // template context: 4278.dat
-            let line = format!("{}\t{}\t{}\t{}\n",
-                               relation.id(),
-                               tag.k(),
-                               escaped_tag,
-                               relation.version(),
+            let relation_tag_line = format!("{}\t{}\t{}\t{}\n",
+                                            relation.id(),
+                                            tag.k(),
+                                            escaped_tag,
+                                            relation.version(),
             );
-            self.writers.relation_tags.writer().write(line.as_bytes())?;
+            self.writers.relation_tags.writer().write(relation_tag_line.as_bytes())?;
         }
+
+        match self.current_relation_tag_lines.set_last_lines(current_relation_tag_lines, relation.id(), relation.visible()) {
+            None => {}
+            Some(current_relation_tag_lines) => {
+                for current_relation_tag_line in current_relation_tag_lines {
+                    self.writers.current_relation_tags.writer().write(current_relation_tag_line.as_bytes())?;
+                }
+            }
+        }
+        self.current_relation_tag_lines.set_last_id(relation.id());
+
 
         // public.current_relations (id, changeset_id, "timestamp", visible, version)
         // template context: 4232.dat
-        let line = format!("{}\t{}\t{}\t{}\t{}\n",
-                           relation.id(),
-                           relation.changeset(),
-                           to_sql_time(relation.timestamp()),
-                           to_sql_bool(relation.visible()),
-                           relation.version(),
+        let current_relation_line = format!("{}\t{}\t{}\t{}\t{}\n",
+                                            relation.id(),
+                                            relation.changeset(),
+                                            to_sql_time(relation.timestamp()),
+                                            to_sql_bool(relation.visible()),
+                                            relation.version(),
         );
-        self.writers.current_relations.writer().write(line.as_bytes())?;
+
+        match self.current_relation_line.set_last_line(current_relation_line, relation.id(), relation.visible()) {
+            None => {}
+            Some(current_relation_line) => {
+                self.writers.current_relations.writer().write(current_relation_line.as_bytes())?;
+            }
+        }
+        self.current_relation_line.set_last_id(relation.id());
 
         // public.relations (relation_id, changeset_id, "timestamp", version, visible, redaction_id)
         // template context: 4279.dat
-        let line = format!("{}\t{}\t{}\t{}\t{}\t\\N\n",
-                           relation.id(),
-                           relation.changeset(),
-                           to_sql_time(relation.timestamp()),
-                           relation.version(),
-                           to_sql_bool(relation.visible()),
+        let relation_line = format!("{}\t{}\t{}\t{}\t{}\t\\N\n",
+                                    relation.id(),
+                                    relation.changeset(),
+                                    to_sql_time(relation.timestamp()),
+                                    relation.version(),
+                                    to_sql_bool(relation.visible()),
         );
-        self.writers.relations.writer().write(line.as_bytes())?;
+        self.writers.relations.writer().write(relation_line.as_bytes())?;
 
         Ok(())
     }
@@ -354,8 +458,79 @@ impl Writer {
         Ok(())
     }
 
+    fn flush_current_object_lines(&mut self) -> Result<(), Error> {
+        match self.current_node_line.take() {
+            None => {}
+            Some(current_node_line) => {
+                self.writers.current_nodes.writer().write(current_node_line.as_bytes())?;
+            }
+        }
+
+        match self.current_node_tag_lines.take() {
+            None => {}
+            Some(current_node_tag_lines) => {
+                for current_node_tag_line in current_node_tag_lines {
+                    self.writers.current_node_tags.writer().write(current_node_tag_line.as_bytes())?;
+                }
+            }
+        }
+
+        match self.current_way_line.take() {
+            None => {}
+            Some(current_way_line) => {
+                self.writers.current_ways.writer().write(current_way_line.as_bytes())?;
+            }
+        }
+
+        match self.current_way_tag_lines.take() {
+            None => {}
+            Some(current_way_tag_lines) => {
+                for current_way_tag_line in current_way_tag_lines {
+                    self.writers.current_way_tags.writer().write(current_way_tag_line.as_bytes())?;
+                }
+            }
+        }
+
+        match self.current_way_node_lines.take() {
+            None => {}
+            Some(current_way_node_lines) => {
+                for current_way_node_line in current_way_node_lines {
+                    self.writers.current_way_nodes.writer().write(current_way_node_line.as_bytes())?;
+                }
+            }
+        }
+
+        match self.current_relation_line.take() {
+            None => {}
+            Some(current_relation_line) => {
+                self.writers.current_relations.writer().write(current_relation_line.as_bytes())?;
+            }
+        }
+
+        match self.current_relation_tag_lines.take() {
+            None => {}
+            Some(current_relation_tag_lines) => {
+                for current_relation_tag_line in current_relation_tag_lines {
+                    self.writers.current_relation_tags.writer().write(current_relation_tag_line.as_bytes())?;
+                }
+            }
+        }
+
+        match self.current_relation_member_lines.take() {
+            None => {}
+            Some(current_relation_member_lines) => {
+                for current_relation_member_line in current_relation_member_lines {
+                    self.writers.current_relation_members.writer().write(current_relation_member_line.as_bytes())?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     /// Flush internal buffers and add file terminators
     pub fn close(&mut self) -> Result<(), Error> {
+        self.flush_current_object_lines()?;
         self.writers.flush_buffers()?;
         self.write_users()?;
         self.write_changesets()?;

@@ -7,7 +7,7 @@ use osm_io::osm::pbf;
 
 /// Display PBF file informationn
 pub fn main() -> Result<(), anyhow::Error> {
-    let input_path = PathBuf::from("./tests/fixtures/niue-230225-geofabrik.osm.pbf");
+    let input_path = PathBuf::from("./tests/fixtures/history-niue-230109.osm.pbf");
     let reader = pbf::reader::Reader::new(&input_path)?;
 
     let info = reader.info();
@@ -64,6 +64,15 @@ pub fn main() -> Result<(), anyhow::Error> {
             println!("osmosis_replication_base_url: {}", url)
         }
     }
+
+    println!("Feature queries");
+    println!("Required 'HistoricalInformation': {}", info.required("HistoricalInformation"));
+    println!("Required 'DenseNodes': {}", info.required("DenseNodes"));
+    println!("Optional 'Sort.Type_then_ID': {}", info.optional("Sort.Type_then_ID"));
+
+    assert!(info.required("HistoricalInformation"));
+    assert!(info.required("DenseNodes"));
+    assert!(info.optional("Sort.Type_then_ID"));
 
     Ok(())
 }

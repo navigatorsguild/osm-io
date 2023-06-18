@@ -36,8 +36,8 @@ fn test_pbf_reader_apidb_dump_writer_pipe() -> Result<(), anyhow::Error>{
 
     // now convert the apidb_dump back to osm.pbf
     let input_path = output_path.clone();
-    let output_path = PathBuf::from("./target/results/history-malta-230109.osm.pbf");
-    let tmp_path = PathBuf::from("./target/results/history-malta-230109-tmp");
+    let output_path = PathBuf::from("./target/results/history-niue-230109.osm.pbf");
+    let tmp_path = PathBuf::from("./target/results/history-niue-230109-tmp");
     let apidb_dump_reader = ApiDbDumpReader::new(input_path, tmp_path)?;
 
     let file_info = FileInfo::new(
