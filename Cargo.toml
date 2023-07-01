@@ -9,7 +9,7 @@ readme = "README.md"
 keywords = ["OSM", "open", "street", "map", "geo"]
 categories = ["science::geo"]
 edition = "2021"
-version = "0.0.2-alpha"
+version = "0.0.3-alpha"
 
 [dependencies]
 bytes = "1.3"

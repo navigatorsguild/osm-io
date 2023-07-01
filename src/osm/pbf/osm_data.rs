@@ -67,8 +67,8 @@ impl OsmData {
                         result = Some(
                             BoundingBox::new(
                                 node.coordinate().lon(),
-                                node.coordinate().lon(),
                                 node.coordinate().lat(),
+                                node.coordinate().lon(),
                                 node.coordinate().lat(),
                             )
                         )

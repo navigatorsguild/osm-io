@@ -21,9 +21,9 @@ impl OsmHeader {
             bounding_box = Some(
                 BoundingBox::new(
                     bbox.left as f64 / NANODEG,
+                    bbox.bottom as f64 / NANODEG,
                     bbox.right as f64 / NANODEG,
                     bbox.top as f64 / NANODEG,
-                    bbox.bottom as f64 / NANODEG,
                 )
             )
         }

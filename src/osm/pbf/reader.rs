@@ -158,13 +158,13 @@ impl Reader {
     ///     reader.parallel_for_each(4, move |element| {
     ///         match element {
     ///             Element::Node { node: _ } => {
-    ///                 nodes.fetch_add(1, Ordering::Relaxed);
+    ///                 nodes.fetch_add(1, Ordering::SeqCst);
     ///             }
     ///             Element::Way { .. } => {
-    ///                 ways.fetch_add(1, Ordering::Relaxed);
+    ///                 ways.fetch_add(1, Ordering::SeqCst);
     ///             }
     ///             Element::Relation { .. } => {
-    ///                 relations.fetch_add(1, Ordering::Relaxed);
+    ///                 relations.fetch_add(1, Ordering::SeqCst);
     ///             }
     ///             Element::Sentinel => {}
     ///             }
@@ -172,9 +172,9 @@ impl Reader {
     ///         },
     ///     )?;
     ///
-    ///     println!("nodes: {}", nodes_clone.load(Ordering::Relaxed));
-    ///     println!("ways: {}", ways_clone.load(Ordering::Relaxed));
-    ///     println!("relations: {}", relations_clone.load(Ordering::Relaxed));
+    ///     println!("nodes: {}", nodes_clone.load(Ordering::SeqCst));
+    ///     println!("ways: {}", ways_clone.load(Ordering::SeqCst));
+    ///     println!("relations: {}", relations_clone.load(Ordering::SeqCst));
     ///     Ok(())
     /// }
     /// ```
