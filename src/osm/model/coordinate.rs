@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Coordinate {
     lat: f64,
     lon: f64,
@@ -26,13 +26,5 @@ impl Coordinate {
 
     pub fn lon7(&self) -> i64 {
         (self.lon * 1E7) as i64
-    }
-}
-
-impl Eq for Coordinate {}
-
-impl PartialEq<Self> for Coordinate {
-    fn eq(&self, other: &Self) -> bool {
-        self.lon.eq(&other.lon()) && self.lat.eq(&other.lat)
     }
 }

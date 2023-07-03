@@ -1,6 +1,6 @@
 use crate::osm::model::tag::Tag;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct MemberData {
     id: i64,
     role: String,
@@ -22,7 +22,7 @@ impl MemberData {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Member {
     Node {
         member: MemberData,
