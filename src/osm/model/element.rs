@@ -132,9 +132,10 @@ impl PartialEq<Self> for Element {
         match self {
             Element::Node { node } => {
                 let id = node.id();
+                let version = node.version();
                 match other {
                     Element::Node { node } => {
-                        id.eq(&node.id())
+                        id.eq(&node.id()) && version.eq(&node.version())
                     }
                     Element::Way { .. } => {
                         false
@@ -149,12 +150,13 @@ impl PartialEq<Self> for Element {
             }
             Element::Way { way } => {
                 let id = way.id();
+                let version = way.version();
                 match other {
                     Element::Node { .. } => {
                         false
                     }
                     Element::Way { way } => {
-                        id.eq(&way.id())
+                        id.eq(&way.id()) && version.eq(&way.version())
                     }
                     Element::Relation { .. } => {
                         false
@@ -166,6 +168,7 @@ impl PartialEq<Self> for Element {
             }
             Element::Relation { relation } => {
                 let id = relation.id();
+                let version = relation.version();
                 match other {
                     Element::Node { .. } => {
                         false
@@ -174,7 +177,7 @@ impl PartialEq<Self> for Element {
                         false
                     }
                     Element::Relation { relation } => {
-                        id.eq(&relation.id())
+                        id.eq(&relation.id()) && version.eq(&relation.version())
                     }
                     Element::Sentinel => {
                         false
@@ -212,9 +215,20 @@ impl Ord for Element {
         match self {
             Element::Node { node } => {
                 let id = node.id();
+                let version = node.version();
                 match other {
                     Element::Node { node } => {
-                        id.cmp(&node.id())
+                        match id.cmp(&node.id()) {
+                            Ordering::Less => {
+                                Ordering::Less
+                            }
+                            Ordering::Equal => {
+                                version.cmp(&node.version())
+                            }
+                            Ordering::Greater => {
+                                Ordering::Greater
+                            }
+                        }
                     }
                     Element::Way { .. } => {
                         Ordering::Less
@@ -229,12 +243,23 @@ impl Ord for Element {
             }
             Element::Way { way } => {
                 let id = way.id();
+                let version = way.version();
                 match other {
                     Element::Node { .. } => {
                         Ordering::Greater
                     }
                     Element::Way { way } => {
-                        id.cmp(&way.id())
+                        match id.cmp(&way.id()) {
+                            Ordering::Less => {
+                                Ordering::Less
+                            }
+                            Ordering::Equal => {
+                                version.cmp(&way.version())
+                            }
+                            Ordering::Greater => {
+                                Ordering::Greater
+                            }
+                        }
                     }
                     Element::Relation { .. } => {
                         Ordering::Less
@@ -246,6 +271,7 @@ impl Ord for Element {
             }
             Element::Relation { relation } => {
                 let id = relation.id();
+                let version = relation.version();
                 match other {
                     Element::Node { .. } => {
                         Ordering::Greater
@@ -254,7 +280,17 @@ impl Ord for Element {
                         Ordering::Greater
                     }
                     Element::Relation { relation } => {
-                        id.cmp(&relation.id())
+                        match id.cmp(&relation.id()) {
+                            Ordering::Less => {
+                                Ordering::Less
+                            }
+                            Ordering::Equal => {
+                                version.cmp(&relation.version())
+                            }
+                            Ordering::Greater => {
+                                Ordering::Greater
+                            }
+                        }
                     }
                     Element::Sentinel => {
                         Ordering::Less
