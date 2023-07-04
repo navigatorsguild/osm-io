@@ -77,7 +77,7 @@ impl Iterator for WayRelationsIterator {
             if let TableRecord::Way { way_record } = way {
                 let mut current_way_tags = Vec::<WayTagRecord>::new();
                 if let Some(way_tag_record) = self.next_way_tag_record.take() {
-                    if way_tag_record.way_id() == way_record.way_id() {
+                    if way_tag_record.way_id() == way_record.way_id() && way_tag_record.version() == way_record.version() {
                         current_way_tags.push(way_tag_record);
                         while let Some(way_tag) = self.way_tags_iterator.next() {
                             if let TableRecord::WayTag { way_tag_record } = way_tag {
