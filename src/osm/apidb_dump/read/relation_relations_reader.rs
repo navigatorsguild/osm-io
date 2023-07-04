@@ -111,7 +111,7 @@ impl Iterator for RelationRelationsIterator {
 
                 let mut current_relation_members = Vec::<RelationMemberRecord>::new();
                 if let Some(relation_member_record) = self.next_relation_member_record.take() {
-                    if relation_member_record.relation_id() == relation_record.relation_id() {
+                    if relation_member_record.relation_id() == relation_record.relation_id() && relation_member_record.version() == relation_record.version() {
                         current_relation_members.push(relation_member_record);
                         while let Some(relation_member) = self.relation_members_iterator.next() {
                             if let TableRecord::RelationMember { relation_member_record } = relation_member {
