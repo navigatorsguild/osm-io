@@ -62,7 +62,7 @@ impl RelationsGroupBuilder {
         r.info.as_mut().unwrap().visible = Some(relation.visible());
         r.info.as_mut().unwrap().uid = Some(relation.uid());
         r.info.as_mut().unwrap().changeset = Some(relation.changeset());
-        r.info.as_mut().unwrap().timestamp = Some(relation.timestamp() / date_granularity as i64);
+        r.info.as_mut().unwrap().timestamp = Some(relation.timestamp() * date_granularity as i64 / 1000 as i64);
         r.info.as_mut().unwrap().version = Some(relation.version());
         r.info.as_mut().unwrap().user_sid = Some(string_table_builder.add(relation.user()) as u32);
         r
