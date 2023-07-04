@@ -169,7 +169,7 @@ impl TableReader {
     }
 
     fn create_node_tag(line: &String, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
-        let columns: Vec<&str> = line.split("\t").collect();
+        let columns: Vec<&str> = line.trim().split("\t").collect();
         match table_def.fields_ref() {
             TableFields::NodeTags { node_id, version, k, v } => {
                 assert!(*node_id < columns.len(), "column {} for field (node_id) is missing in {}:{}", *node_id + 1, table_def.path().to_string_lossy(), line_number);
