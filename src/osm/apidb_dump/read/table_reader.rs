@@ -317,7 +317,7 @@ impl TableReader {
                             i64::from_str(columns[*relation_id]).unwrap(),
                             RelationMemberType::try_from(columns[*member_type]).unwrap(),
                             i64::from_str(columns[*member_id]).unwrap(),
-                            columns[*version].to_string(),
+                            columns[*member_role].to_string(),
                             i64::from_str(columns[*version]).unwrap(),
                             i64::from_str(columns[*sequence_id]).unwrap(),
                         )
