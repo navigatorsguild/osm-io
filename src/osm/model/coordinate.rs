@@ -17,7 +17,7 @@ impl Coordinate {
     }
 
     pub fn lat7(&self) -> i64 {
-        (self.lat * 1E7) as i64
+        (self.lat * 1E7).round() as i64
     }
 
     pub fn lon(&self) -> f64 {
@@ -25,6 +25,6 @@ impl Coordinate {
     }
 
     pub fn lon7(&self) -> i64 {
-        (self.lon * 1E7) as i64
+        (self.lon * 1E7).round() as i64
     }
 }
