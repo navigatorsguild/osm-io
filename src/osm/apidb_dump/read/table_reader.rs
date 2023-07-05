@@ -183,7 +183,7 @@ impl TableReader {
                             i64::from_str(columns[*node_id]).unwrap(),
                             i64::from_str(columns[*version]).unwrap(),
                             columns[*k].to_string(),
-                            unescape(columns[*v]).unwrap(),
+                            unescape(columns[*v]).unwrap_or(columns[*v].to_string()),
                         )
                     }
                 )
@@ -262,7 +262,7 @@ impl TableReader {
                             i64::from_str(columns[*way_id]).unwrap(),
                             i64::from_str(columns[*version]).unwrap(),
                             columns[*k].to_string(),
-                            unescape(columns[*v]).unwrap(),
+                            unescape(columns[*v]).unwrap_or(columns[*v].to_string()),
                         )
                     }
                 )
@@ -318,7 +318,7 @@ impl TableReader {
                             i64::from_str(columns[*relation_id]).unwrap(),
                             RelationMemberType::try_from(columns[*member_type]).unwrap(),
                             i64::from_str(columns[*member_id]).unwrap(),
-                            unescape(columns[*member_role]).unwrap(),
+                            unescape(columns[*member_role]).unwrap_or(columns[*member_role].to_string()),
                             i64::from_str(columns[*version]).unwrap(),
                             i64::from_str(columns[*sequence_id]).unwrap(),
                         )
@@ -345,7 +345,7 @@ impl TableReader {
                             i64::from_str(columns[*relation_id]).unwrap(),
                             i64::from_str(columns[*version]).unwrap(),
                             columns[*k].to_string(),
-                            unescape(columns[*v]).unwrap(),
+                            unescape(columns[*v]).unwrap_or(columns[*v].to_string()),
                         )
                     }
                 )
