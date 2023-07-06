@@ -182,7 +182,7 @@ impl TableReader {
                         node_tag_record: NodeTagRecord::new(
                             i64::from_str(columns[*node_id]).unwrap(),
                             i64::from_str(columns[*version]).unwrap(),
-                            columns[*k].to_string(),
+                            unescape(columns[*k]).unwrap_or(columns[*k].to_string()),
                             unescape(columns[*v]).unwrap_or(columns[*v].to_string()),
                         )
                     }
@@ -261,7 +261,7 @@ impl TableReader {
                         way_tag_record: WayTagRecord::new(
                             i64::from_str(columns[*way_id]).unwrap(),
                             i64::from_str(columns[*version]).unwrap(),
-                            columns[*k].to_string(),
+                            unescape(columns[*k]).unwrap_or(columns[*k].to_string()),
                             unescape(columns[*v]).unwrap_or(columns[*v].to_string()),
                         )
                     }
@@ -344,7 +344,7 @@ impl TableReader {
                         relation_tag_record: RelationTagRecord::new(
                             i64::from_str(columns[*relation_id]).unwrap(),
                             i64::from_str(columns[*version]).unwrap(),
-                            columns[*k].to_string(),
+                            unescape(columns[*k]).unwrap_or(columns[*k].to_string()),
                             unescape(columns[*v]).unwrap_or(columns[*v].to_string()),
                         )
                     }

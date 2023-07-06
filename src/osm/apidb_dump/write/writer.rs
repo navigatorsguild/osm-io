@@ -121,11 +121,12 @@ impl Writer {
         for tag in tags {
             // public.node_tags (node_id, version, k, v)
             // template context: 4259.dat
+            let escaped_key = escape(&tag.k());
             let escaped_tag = escape(&tag.v());
             let node_tag_line = format!("{}\t{}\t{}\t{}\n",
                                         node.id(),
                                         node.version(),
-                                        tag.k(),
+                                        escaped_key,
                                         escaped_tag,
             );
             self.writers.node_tags.writer().write(node_tag_line.as_bytes())?;
@@ -196,10 +197,11 @@ impl Writer {
         for tag in way.take_tags() {
             // public.current_way_tags (way_id, k, v)
             // template context: 4235.dat
+            let escaped_key = escape(&tag.k());
             let escaped_tag = escape_string::escape(tag.v());
             let current_way_tag_line = format!("{}\t{}\t{}\n",
                                                way.id(),
-                                               tag.k(),
+                                               escaped_key,
                                                escaped_tag,
             );
             current_way_tag_lines.push(current_way_tag_line);
@@ -313,10 +315,11 @@ impl Writer {
         for tag in relation.take_tags() {
             // public.current_relation_tags (relation_id, k, v)
             // template context: 4231.dat
+            let escaped_key = escape(&tag.k());
             let escaped_tag = escape_string::escape(&tag.v());
             let current_relation_tag_line = format!("{}\t{}\t{}\n",
                                                     relation.id(),
-                                                    tag.k(),
+                                                    escaped_key,
                                                     escaped_tag,
             );
             current_relation_tag_lines.push(current_relation_tag_line);
