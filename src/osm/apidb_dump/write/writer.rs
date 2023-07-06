@@ -135,7 +135,7 @@ impl Writer {
             // template context: 4227.dat
             let current_node_tag_line = format!("{}\t{}\t{}\n",
                                                 node.id(),
-                                                tag.k(),
+                                                escaped_key,
                                                 escaped_tag,
             );
             // self.writers.current_node_tags.writer().write(current_node_tag_line.as_bytes())?;
@@ -210,7 +210,7 @@ impl Writer {
             // template context: 4293.dat
             let way_tag_line_line = format!("{}\t{}\t{}\t{}\n",
                                             way.id(),
-                                            tag.k(),
+                                            escaped_key,
                                             escaped_tag,
                                             way.version()
             );
@@ -328,7 +328,7 @@ impl Writer {
             // template context: 4278.dat
             let relation_tag_line = format!("{}\t{}\t{}\t{}\n",
                                             relation.id(),
-                                            tag.k(),
+                                            escaped_key,
                                             escaped_tag,
                                             relation.version(),
             );
