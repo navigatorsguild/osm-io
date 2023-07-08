@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use anyhow::anyhow;
 use command_executor::shutdown_mode::ShutdownMode;
@@ -229,6 +230,41 @@ impl Reader {
 
     pub fn info(&self) -> &FileInfo {
         &self.info
+    }
+
+    pub fn count_objects(&self) -> Result<(i64, i64, i64), anyhow::Error> {
+        let nodes = Arc::new(AtomicUsize::new(0));
+        let ways = Arc::new(AtomicUsize::new(0));
+        let relations = Arc::new(AtomicUsize::new(0));
+
+        let nodes_clone = nodes.clone();
+        let ways_clone = ways.clone();
+        let relations_clone = relations.clone();
+
+        self.parallel_for_each(num_cpus::get(), move |element| {
+            match element {
+                Element::Node { node: _ } => {
+                    nodes.fetch_add(1, Ordering::SeqCst);
+                }
+                Element::Way { .. } => {
+                    ways.fetch_add(1, Ordering::SeqCst);
+                }
+                Element::Relation { .. } => {
+                    relations.fetch_add(1, Ordering::SeqCst);
+                }
+                Element::Sentinel => {}
+            }
+            Ok(())
+        },
+        )?;
+
+        Ok(
+            (
+                nodes_clone.load(Ordering::SeqCst) as i64,
+                ways_clone.load(Ordering::SeqCst) as i64,
+                relations_clone.load(Ordering::SeqCst) as i64
+            )
+        )
     }
 }
 

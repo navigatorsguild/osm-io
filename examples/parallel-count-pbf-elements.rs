@@ -28,13 +28,13 @@ pub fn main() -> Result<(), anyhow::Error> {
     reader.parallel_for_each(4, move |element| {
         match element {
             Element::Node { node: _ } => {
-                nodes.fetch_add(1, Ordering::Relaxed);
+                nodes.fetch_add(1, Ordering::SeqCst);
             }
             Element::Way { .. } => {
-                ways.fetch_add(1, Ordering::Relaxed);
+                ways.fetch_add(1, Ordering::SeqCst);
             }
             Element::Relation { .. } => {
-                relations.fetch_add(1, Ordering::Relaxed);
+                relations.fetch_add(1, Ordering::SeqCst);
             }
             Element::Sentinel => {}
         }
@@ -42,9 +42,9 @@ pub fn main() -> Result<(), anyhow::Error> {
     },
     )?;
 
-    log::info!("nodes: {}", nodes_clone.load(Ordering::Relaxed));
-    log::info!("ways: {}", ways_clone.load(Ordering::Relaxed));
-    log::info!("relations: {}", relations_clone.load(Ordering::Relaxed));
+    log::info!("nodes: {}", nodes_clone.load(Ordering::SeqCst));
+    log::info!("ways: {}", ways_clone.load(Ordering::SeqCst));
+    log::info!("relations: {}", relations_clone.load(Ordering::SeqCst));
 
     log::info!("Finished parallel count pbf elements, time: {}", stopwatch);
     Ok(())

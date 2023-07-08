@@ -74,23 +74,27 @@ fn test_pbf_reader() -> Result<(), anyhow::Error> {
         move |element| {
             match element {
                 Element::Node { node: _ } => {
-                    atomic_nodes.fetch_add(1, Ordering::Relaxed);
+                    atomic_nodes.fetch_add(1, Ordering::SeqCst);
                 }
                 Element::Way { way: _ } => {
-                    atomic_ways.fetch_add(1, Ordering::Relaxed);
+                    atomic_ways.fetch_add(1, Ordering::SeqCst);
                 }
                 Element::Relation { relation: _ } => {
-                    atomic_relations.fetch_add(1, Ordering::Relaxed);
+                    atomic_relations.fetch_add(1, Ordering::SeqCst);
                 }
                 Element::Sentinel => {}
             }
             Ok(())
         },
     )?;
-    assert_eq!(atomic_nodes_clone.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["nodes"].as_i64().unwrap());
-    assert_eq!(atomic_ways_clone.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["ways"].as_i64().unwrap());
-    assert_eq!(atomic_relations_clone.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["relations"].as_i64().unwrap());
+    assert_eq!(atomic_nodes_clone.fetch_or(0, Ordering::SeqCst), fixture_analysis["data"]["count"]["nodes"].as_i64().unwrap());
+    assert_eq!(atomic_ways_clone.fetch_or(0, Ordering::SeqCst), fixture_analysis["data"]["count"]["ways"].as_i64().unwrap());
+    assert_eq!(atomic_relations_clone.fetch_or(0, Ordering::SeqCst), fixture_analysis["data"]["count"]["relations"].as_i64().unwrap());
 
+    let (nodes2, ways2, relations2) = reader.count_objects()?;
+    assert_eq!(nodes, nodes2);
+    assert_eq!(ways, ways2);
+    assert_eq!(relations, relations2);
 
     log::info!("Finished OSM PBF reader test");
     Ok(())

@@ -44,20 +44,20 @@ pub fn analyze_pbf_output(output_path: PathBuf, fixture_analysis_path: PathBuf) 
         move |element| {
                 match element {
                     Element::Node { node: _ } => {
-                        atomic_nodes.fetch_add(1, Ordering::Relaxed);
+                        atomic_nodes.fetch_add(1, Ordering::SeqCst);
                     }
                     Element::Way { way: _ } => {
-                        atomic_ways.fetch_add(1, Ordering::Relaxed);
+                        atomic_ways.fetch_add(1, Ordering::SeqCst);
                     }
                     Element::Relation { relation: _ } => {
-                        atomic_relations.fetch_add(1, Ordering::Relaxed);
+                        atomic_relations.fetch_add(1, Ordering::SeqCst);
                     }
                     Element::Sentinel => {}
                 }
             Ok(())
         }
     ).unwrap();
-    assert_eq!(atomic_nodes_clone.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["nodes"].as_i64().unwrap());
-    assert_eq!(atomic_ways_clone.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["ways"].as_i64().unwrap());
-    assert_eq!(atomic_relations_clone.fetch_or(0, Ordering::Relaxed), fixture_analysis["data"]["count"]["relations"].as_i64().unwrap());
+    assert_eq!(atomic_nodes_clone.fetch_or(0, Ordering::SeqCst), fixture_analysis["data"]["count"]["nodes"].as_i64().unwrap());
+    assert_eq!(atomic_ways_clone.fetch_or(0, Ordering::SeqCst), fixture_analysis["data"]["count"]["ways"].as_i64().unwrap());
+    assert_eq!(atomic_relations_clone.fetch_or(0, Ordering::SeqCst), fixture_analysis["data"]["count"]["relations"].as_i64().unwrap());
 }
