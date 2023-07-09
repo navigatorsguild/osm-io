@@ -484,7 +484,8 @@ pub(crate) struct TableIterator {
 
 impl TableIterator {
     pub(crate) fn new(table_reader: &TableReader) -> Result<TableIterator, anyhow::Error> {
-        log::info!("Create iterator for {} from {:?}", table_reader.table_def.name(), table_reader.table_def.path());
+        log::info!("Source data for {} is in {}", table_reader.table_def.name(), table_reader.table_def.path().display());
+        log::info!("Create iterator for {} from {}", table_reader.table_def.name(), table_reader.table_def.sorted_path().display());
         let f = File::open(&table_reader.table_def.sorted_path())?;
         let reader = BufReader::new(f);
         let record_builder = table_reader.create_record_builder()?;
