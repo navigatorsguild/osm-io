@@ -33,7 +33,7 @@ impl Reader {
 
         let toc_path = input_path.join("toc.dat");
         let toc = fs::read(&toc_path)
-            .with_context(|| anyhow!("path: {}", toc_path.to_string_lossy()))?;
+            .with_context(|| anyhow!("path: {}", toc_path.display()))?;
         let raw_table_defs = Self::get_table_def_strings(&toc);
         // COPY public.node_tags (node_id, version, k, v) FROM stdin
         let re = Regex::new("^([^ ]+) \\((.+)\\)$").unwrap();

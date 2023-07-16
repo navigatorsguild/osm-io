@@ -21,7 +21,9 @@ impl Iterator for FileBlockIterator {
         let blob_desc = self.blob_iterator.next()?;
         Some(
             FileBlock::from_blob_desc(&blob_desc).expect(
-                format!("Failed to create a file block from blob {} from {:?}", blob_desc.index(), blob_desc.path()).as_str()
+                format!("Failed to create a file block from blob {} from {:?}",
+                    blob_desc.index(),
+                    blob_desc.path()).as_str()
             )
         )
     }

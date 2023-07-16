@@ -99,3 +99,24 @@ fn test_pbf_reader() -> Result<(), anyhow::Error> {
     log::info!("Finished OSM PBF reader test");
     Ok(())
 }
+
+#[test]
+#[should_panic]
+fn test_non_existent_pbf_input() {
+    let input_path = PathBuf::from("./tests/fixtures/non-existent");
+    Reader::new(&input_path).expect("path doesn't exist");
+}
+
+#[test]
+#[should_panic]
+fn test_directory_input() {
+    let input_path = PathBuf::from("./tests/fixtures/");
+    Reader::new(&input_path).expect("the input is a directory");
+}
+
+#[test]
+#[should_panic]
+fn test_text_input() {
+    let input_path = PathBuf::from("./tests/fixtures/niue-230109.osm.pbf.analysis.json");
+    Reader::new(&input_path).expect("the input is text");
+}

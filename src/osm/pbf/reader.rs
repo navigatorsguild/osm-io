@@ -50,7 +50,7 @@ impl Reader {
         };
         let mut block_iterator = reader.clone().blocks()?;
         let file_block = block_iterator.next().ok_or(
-            anyhow!("Failed to parse file header")
+            anyhow!("Failed to parse file header, path: {}", path.display())
         )?;
         let osm_header = file_block.as_osm_header()?;
         reader.info = osm_header.info().clone();

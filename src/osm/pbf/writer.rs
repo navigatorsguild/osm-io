@@ -73,7 +73,7 @@ impl Writer {
         compression_type: CompressionType,
     ) -> Result<Writer, anyhow::Error> {
         let file = File::create(path.clone())
-            .with_context(|| anyhow!("path: {}", path.to_string_lossy()))?;
+            .with_context(|| anyhow!("path: {}", path.display()))?;
         Ok(
             Writer {
                 path: path.clone(),

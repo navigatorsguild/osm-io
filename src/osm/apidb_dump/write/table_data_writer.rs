@@ -44,6 +44,6 @@ impl TableDataWriter {
 
 impl Debug for TableDataWriter {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "table: {}, file: {}", self.table_name(), self.file_path().to_string_lossy())
+        write!(f, "table: {}, file: {}", self.table_name(), self.file_path().display())
     }
 }
