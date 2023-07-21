@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use data_encoding::HEXUPPER;
+use uuid::Uuid;
 
 use crate::osm::model::element::Element;
 
@@ -17,7 +17,7 @@ pub struct ThreadLocalAccumulator {
 
 impl ThreadLocalAccumulator {
     pub fn new(capacity: usize) -> ThreadLocalAccumulator {
-        let id = HEXUPPER.encode(&rand::random::<[u8; 16]>());
+        let id = Uuid::new_v4().to_string();
         ThreadLocalAccumulator {
             id,
             capacity,
