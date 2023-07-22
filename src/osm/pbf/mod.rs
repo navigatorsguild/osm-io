@@ -7,6 +7,7 @@ pub mod file_block;
 pub mod file_info;
 pub mod compression_type;
 pub mod thread_local_accumulator;
+pub mod bounding_box_calculator;
 
 pub(crate) mod dense_group_builder;
 pub(crate) mod string_table_builder;
@@ -19,3 +20,4 @@ pub(crate) mod osm_data;
 pub(crate) mod osm_header;
 pub(crate) mod blob_iterator;
 pub(crate) mod blob_desc;
+pub(crate) mod calc_bounding_box_command;

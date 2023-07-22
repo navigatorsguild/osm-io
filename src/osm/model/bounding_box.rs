@@ -23,6 +23,10 @@ impl BoundingBox {
         }
     }
 
+    pub fn from_point(c: &Coordinate) -> BoundingBox {
+        BoundingBox::new(c.lon(), c.lat(), c.lon(), c.lat())
+    }
+
     pub fn merge_point(&mut self, coordinate: &Coordinate) {
         if coordinate.lon() < self.left {
             self.left = coordinate.lon();
