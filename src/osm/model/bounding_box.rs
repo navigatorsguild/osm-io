@@ -82,7 +82,7 @@ impl BoundingBox {
 
 impl Display for BoundingBox {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "left: {}, bottom: {}, right: {}, top: {}", self.left, self.bottom, self.right, self.top)
+        write!(f, "{},{},{},{}", self.left, self.bottom, self.right, self.top)
     }
 }
 
@@ -128,13 +128,19 @@ mod tests {
 
     #[test]
     fn test_from_str() -> Result<(), anyhow::Error> {
-        let bounding_box = BoundingBox::from_str("-180.0, -90.0, 180.0, 90.0")?;
+        let source = "-180.0,-90.0,180.0,90.0".to_string();
+        let bounding_box = BoundingBox::from_str()?;
         assert_eq!(bounding_box.left, -180.0);
         assert_eq!(bounding_box.bottom, -90.0);
         assert_eq!(bounding_box.right, 180.0);
         assert_eq!(bounding_box.top, 90.0);
+
+        let result = bounding_box.to_string();
+        assert_eq!(source, result);
         Ok(())
     }
+
+
 
     #[test]
     #[should_panic]

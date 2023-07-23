@@ -8,12 +8,14 @@ use chrono::SecondsFormat;
 use num_format::{Locale, ToFormattedString};
 
 use crate::osm::converters::date_time_to_iso8601_seconds;
+use crate::osm::model::bounding_box::BoundingBox;
 
 pub fn init_replication(
     minute_dir_path: &PathBuf,
     osmosis_replication_timestamp: DateTime<Utc>,
     osmosis_replication_base_url: reqwest::Url,
     safety_margin_hours: i64,
+    bounding_box: BoundingBox,
     _var_lib_path: &PathBuf,
     _var_log_path: &PathBuf,
     _verbose: bool,
@@ -21,16 +23,18 @@ pub fn init_replication(
     if minute_dir_path.exists() {
         if minute_dir_path.is_dir() {
             if !minute_dir_path.read_dir()?.next().is_none() {
-                Err(anyhow!("Cannot init replication, the minute directory path {} already exists and is not empty.", minute_dir_path.display()))?;
+                Err(anyhow!("Cannot init replication, the minute directory path {} already exists and is not empty", minute_dir_path.display()))?;
             }
         } else {
-            Err(anyhow!("Cannot init replication, the minute directory path {} already exists and is not a directory.", minute_dir_path.display()))?;
+            Err(anyhow!("Cannot init replication, the minute directory path {} already exists and is not a directory", minute_dir_path.display()))?;
         }
     }
     let minute_url = osmosis_replication_base_url.join("/replication/minute/")?;
     let starting_point_sequence_number = find_starting_point(osmosis_replication_timestamp, safety_margin_hours, minute_url.clone())?;
     let (a, b, c) = split_name_components(starting_point_sequence_number);
     create_minute_dirs(&a, &b, &minute_dir_path)?;
+    let mut bounding_box_path = minute_dir_path.clone();
+    bounding_box_path.push("bounding-box.txt");
     let mut global_state_path = minute_dir_path.clone();
     global_state_path.push("state.txt");
     let mut minute_state_path = minute_dir_path.clone();
@@ -58,6 +62,8 @@ pub fn init_replication(
     log::info!("Write starting point change to: {}", minute_change_path.display());
     fs::write(minute_change_path, starting_point_change)?;
 
+    log::info!("Set replication bounding box at {} to {}", bounding_box_path.display(), bounding_box);
+    fs::write(bounding_box_path, bounding_box.to_string())?;
     Ok(())
 }
 
