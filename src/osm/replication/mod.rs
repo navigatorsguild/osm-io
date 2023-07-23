@@ -18,6 +18,15 @@ pub fn init_replication(
     _var_log_path: &PathBuf,
     _verbose: bool,
 ) -> Result<(), anyhow::Error> {
+    if minute_dir_path.exists() {
+        if minute_dir_path.is_dir() {
+            if !minute_dir_path.read_dir()?.next().is_none() {
+                Err(anyhow!("Cannot init replication, the minute directory path {} already exists and is not empty.", minute_dir_path.display()))?;
+            }
+        } else {
+            Err(anyhow!("Cannot init replication, the minute directory path {} already exists and is not a directory.", minute_dir_path.display()))?;
+        }
+    }
     let minute_url = osmosis_replication_base_url.join("/replication/minute/")?;
     let starting_point_sequence_number = find_starting_point(osmosis_replication_timestamp, safety_margin_hours, minute_url.clone())?;
     let (a, b, c) = split_name_components(starting_point_sequence_number);
