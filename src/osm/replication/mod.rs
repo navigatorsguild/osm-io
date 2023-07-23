@@ -13,12 +13,13 @@ pub fn init_replication(
     minute_dir_path: &PathBuf,
     osmosis_replication_timestamp: DateTime<Utc>,
     osmosis_replication_base_url: reqwest::Url,
+    safety_margin_hours: i64,
     _var_lib_path: &PathBuf,
     _var_log_path: &PathBuf,
     _verbose: bool,
 ) -> Result<(), anyhow::Error> {
     let minute_url = osmosis_replication_base_url.join("/replication/minute/")?;
-    let starting_point_sequence_number = find_starting_point(osmosis_replication_timestamp, minute_url.clone())?;
+    let starting_point_sequence_number = find_starting_point(osmosis_replication_timestamp, safety_margin_hours, minute_url.clone())?;
     let (a, b, c) = split_name_components(starting_point_sequence_number);
     create_minute_dirs(&a, &b, &minute_dir_path)?;
     let mut global_state_path = minute_dir_path.clone();
@@ -51,7 +52,7 @@ pub fn init_replication(
     Ok(())
 }
 
-fn find_starting_point(osmosis_replication_timestamp: DateTime<Utc>, minute_url: reqwest::Url) -> Result<i64, anyhow::Error> {
+fn find_starting_point(osmosis_replication_timestamp: DateTime<Utc>, safety_margin_hours: i64, minute_url: reqwest::Url) -> Result<i64, anyhow::Error> {
     log::info!("Looking for replication starting point for timestamp: {}", osmosis_replication_timestamp.to_rfc3339_opts(SecondsFormat::Secs, true));
     let current_state_url = minute_url.join("state.txt")?;
     log::info!("About to fetch current state: {}", current_state_url);
@@ -66,10 +67,10 @@ fn find_starting_point(osmosis_replication_timestamp: DateTime<Utc>, minute_url:
         ))?;
     }
 
-    let starting_point_timestamp = osmosis_replication_timestamp - Duration::hours(24);
+    let starting_point_timestamp = osmosis_replication_timestamp - Duration::hours(safety_margin_hours);
 
     while current_timestamp > starting_point_timestamp {
-        current_sequence_number -= Duration::hours(48).num_minutes();
+        current_sequence_number -= Duration::hours(safety_margin_hours * 2 + 1).num_minutes();
         let (a, b, c) = split_name_components(current_sequence_number);
         let minute_state_url = minute_url.clone().join(format!("{}/{}/{}.state.txt", a, b, c).as_str())?;
         let text = fetch_text(&minute_state_url)?;
