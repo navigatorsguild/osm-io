@@ -73,8 +73,8 @@ impl BoundingBox {
 
     pub fn buffer(&mut self, buff: f64) {
         self.left -= buff;
-        if self.left < 180.0 {
-            self.left = 180.0;
+        if self.left < -180.0 {
+            self.left = -180.0;
         }
         self.bottom -= buff;
         if self.bottom < -90.0 {
