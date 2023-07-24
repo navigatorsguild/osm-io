@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use anyhow::anyhow;
 
+use crate::osm::converters;
 use crate::osm::model::coordinate::Coordinate;
 
 #[derive(Debug, Clone)]
@@ -15,6 +16,13 @@ pub struct BoundingBox {
 
 impl BoundingBox {
     pub fn new(left: f64, bottom: f64, right: f64, top: f64) -> BoundingBox {
+        // apparently the input from osm.pbf can be out of range
+        // assert!(left >= -180.0 && left <= 180.0);
+        // assert!(right >= -180.0 && right <= 180.0);
+        // assert!(left <= right);
+        // assert!(bottom >= -90.0 && bottom <= 90.0);
+        // assert!(top >= -90.0 && top <= 90.0);
+        // assert!(bottom <= top);
         BoundingBox {
             left,
             bottom,
@@ -63,6 +71,25 @@ impl BoundingBox {
         }
     }
 
+    pub fn buffer(&mut self, buff: f64) {
+        self.left -= buff;
+        if self.left < 180.0 {
+            self.left = 180.0;
+        }
+        self.bottom -= buff;
+        if self.bottom < -90.0 {
+            self.bottom = -90.0;
+        }
+        self.right += buff;
+        if self.right > 180.0 {
+            self.right = 180.0;
+        }
+        self.top += buff;
+        if self.top > 90.0 {
+            self.top = 90.0;
+        }
+    }
+
     pub fn left(&self) -> f64 {
         self.left
     }
@@ -82,7 +109,14 @@ impl BoundingBox {
 
 impl Display for BoundingBox {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{},{},{},{}", self.left, self.bottom, self.right, self.top)
+        write!(
+            f,
+            "{},{},{},{}",
+            converters::format_float(self.left, 7),
+            converters::format_float(self.bottom, 7),
+            converters::format_float(self.right, 7),
+            converters::format_float(self.top, 7),
+        )
     }
 }
 
@@ -128,18 +162,17 @@ mod tests {
 
     #[test]
     fn test_from_str() -> Result<(), anyhow::Error> {
-        let source = "-180.0,-90.0,180.0,90.0".to_string();
-        let bounding_box = BoundingBox::from_str()?;
+        let source = "-180.0 ,-90.0 ,180.0,  90.0".to_string();
+        let bounding_box = BoundingBox::from_str(source.as_str())?;
         assert_eq!(bounding_box.left, -180.0);
         assert_eq!(bounding_box.bottom, -90.0);
         assert_eq!(bounding_box.right, 180.0);
         assert_eq!(bounding_box.top, 90.0);
 
         let result = bounding_box.to_string();
-        assert_eq!(source, result);
+        assert_eq!(source.replace(" ", ""), result);
         Ok(())
     }
-
 
 
     #[test]

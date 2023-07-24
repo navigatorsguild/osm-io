@@ -8,3 +8,11 @@ pub fn timestamp_to_iso8601_seconds(nsec: i64) -> String {
 pub fn date_time_to_iso8601_seconds(t: DateTime<Utc>) -> String {
     t.to_rfc3339_opts(SecondsFormat::Secs, true)
 }
+
+pub fn format_float(f: f64, precision: usize) -> String {
+    let mut result = format!("{:.precision$}", f);
+    while result.ends_with("00") {
+        result.pop();
+    }
+    result
+}

@@ -6,6 +6,9 @@ pub struct Coordinate {
 
 impl Coordinate {
     pub fn new(lat: f64, lon: f64) -> Coordinate {
+        // history files contain invalid coordinates for nodes
+        // assert!(lon >= -180.0 && lon <= 180.0);
+        // assert!(lat >= -90.0 && lat <= 90.0);
         Coordinate {
             lat,
             lon,
