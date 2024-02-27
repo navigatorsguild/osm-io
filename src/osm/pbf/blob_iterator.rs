@@ -2,11 +2,12 @@ use std::fs::File;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use std::ops::AddAssign;
 use std::path::PathBuf;
-use anyhow::{anyhow, Context};
 
+use anyhow::{anyhow, Context};
 use prost::Message;
 
-use crate::{osm, osmpbf};
+use crate::osm;
+use crate::osm::pbf::osmpbf;
 
 pub struct BlobIterator {
     path: PathBuf,
