@@ -7,7 +7,7 @@ use flate2::Compression;
 use flate2::read::ZlibEncoder;
 use prost::Message;
 
-use crate::{osm, osmpbf};
+use crate::{osm, osm::pbf::osmpbf};
 use crate::osm::model::bounding_box::BoundingBox;
 use crate::osm::model::element::Element;
 use crate::osm::pbf::blob_desc::BlobDesc;
@@ -15,8 +15,8 @@ use crate::osm::pbf::compression_type::CompressionType;
 use crate::osm::pbf::file_block_metadata::FileBlockMetadata;
 use crate::osm::pbf::osm_data::OsmData;
 use crate::osm::pbf::osm_header::OsmHeader;
-use crate::osmpbf::{Blob, BlobHeader};
-use crate::osmpbf::blob::Data;
+use crate::osm::pbf::osmpbf::{Blob, BlobHeader};
+use crate::osm::pbf::osmpbf::blob::Data;
 
 /// A header or data file block in *.osm.pbf file
 #[derive(Debug)]
