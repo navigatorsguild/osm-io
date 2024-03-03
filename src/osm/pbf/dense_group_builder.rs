@@ -1,6 +1,6 @@
 use crate::osm::model::node::Node;
 use crate::osm::pbf::string_table_builder::StringTableBuilder;
-use crate::osm::pbf::osmpbf::{DenseInfo, DenseNodes, PrimitiveGroup};
+use crate::osmpbf::{DenseInfo, DenseNodes, PrimitiveGroup};
 
 pub(crate) struct DenseGroupBuilder {
     granularity: i32,

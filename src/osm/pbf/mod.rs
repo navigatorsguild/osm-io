@@ -19,4 +19,3 @@ pub(crate) mod osm_data;
 pub(crate) mod osm_header;
 pub(crate) mod blob_iterator;
 pub(crate) mod blob_desc;
-mod osmpbf;

@@ -1,29 +1,27 @@
+use std::path::PathBuf;
 use prost_build;
-use prost_build::Config;
 
+// Generate the osmpbf module when developing the osm-io package
+// and copy the generated file when using it from other packages
 fn main() -> std::io::Result<()> {
     let is_primary_opt = option_env!("CARGO_PRIMARY_PACKAGE");
     match is_primary_opt {
         None => {
-            Ok(())
+            let out_dir = std::env::var("OUT_DIR").unwrap();
+            let mut generated_path = PathBuf::from(out_dir);
+            generated_path.push("osmpbf.rs");
+            std::fs::copy("./src/osm/pbf/generated/prost-osmpbf.rs", generated_path).map(|_| ())
         }
-        Some(is_primary_env) => {
-            if is_primary_env == "1" {
-                let protos = [
-                    "./src/osm/pbf/format/fileformat.proto",
-                    "./src/osm/pbf/format/osmformat.proto"
-                ];
+        Some(_) => {
+            let protos = [
+                "./src/osm/pbf/format/fileformat.proto",
+                "./src/osm/pbf/format/osmformat.proto"
+            ];
 
-                let includes = [
-                    "src/"
-                ];
-                let mut config = Config::new();
-                config.out_dir("./src/osm/pbf/osmpbf");
-                config.compile_protos(&protos, &includes)?;
-                std::fs::rename("./src/osm/pbf/osmpbf/osmpbf.rs", "./src/osm/pbf/osmpbf/mod.rs")
-            } else {
-                Ok(())
-            }
+            let includes = [
+                "src/"
+            ];
+            prost_build::compile_protos(&protos, &includes)
         }
     }
 }

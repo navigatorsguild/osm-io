@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::osm::pbf::osmpbf::StringTable;
+use crate::osmpbf::StringTable;
 
 pub(crate) struct StringTableBuilder {
     string_table: Option<StringTable>,
