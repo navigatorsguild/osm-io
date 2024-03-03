@@ -4,7 +4,7 @@ use prost::Message;
 
 use crate::osm::model::bounding_box::BoundingBox;
 use crate::osm::pbf::file_info::FileInfo;
-use crate::osm::pbf::osmpbf;
+use crate::osmpbf;
 
 #[derive(Clone, Debug, Default)]
 pub struct OsmHeader {

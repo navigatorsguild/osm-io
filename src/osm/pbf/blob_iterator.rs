@@ -7,7 +7,7 @@ use anyhow::{anyhow, Context};
 use prost::Message;
 
 use crate::osm;
-use crate::osm::pbf::osmpbf;
+use crate::osmpbf;
 
 pub struct BlobIterator {
     path: PathBuf,

@@ -1,7 +1,7 @@
 use crate::osm::model::way::Way;
 use crate::osm::pbf::string_table_builder::StringTableBuilder;
-use crate::osm::pbf::osmpbf;
-use crate::osm::pbf::osmpbf::PrimitiveGroup;
+use crate::osmpbf;
+use crate::osmpbf::PrimitiveGroup;
 
 pub(crate) struct WaysGroupBuilder {
     ways: Option<Vec<osmpbf::Way>>,

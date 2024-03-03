@@ -4,14 +4,14 @@ use std::ops::Index;
 
 use prost::Message;
 
-use crate::{osm, osm::pbf::osmpbf};
+use crate::{osm, osmpbf};
 use crate::osm::model::bounding_box::BoundingBox;
 use crate::osm::model::element::Element;
 use crate::osm::pbf::dense_group_builder::DenseGroupBuilder;
 use crate::osm::pbf::relations_group_builder::RelationsGroupBuilder;
 use crate::osm::pbf::string_table_builder::StringTableBuilder;
 use crate::osm::pbf::ways_group_builder::WaysGroupBuilder;
-use crate::osm::pbf::osmpbf::{PrimitiveBlock, PrimitiveGroup};
+use crate::osmpbf::{PrimitiveBlock, PrimitiveGroup};
 
 #[derive(Debug, Default)]
 pub struct OsmData {
