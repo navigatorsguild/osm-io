@@ -1,9 +1,8 @@
 use std::path::PathBuf;
 use prost_build;
 
-//! Generate the osmpbf module when developing the osm-io package
-//! and copy the generated file when using it from other packages
-//!
+// Generate the osmpbf module when developing the osm-io package
+// and copy the generated file when using it from other packages
 fn main() -> std::io::Result<()> {
     let is_primary_opt = option_env!("CARGO_PRIMARY_PACKAGE");
     match is_primary_opt {
