@@ -149,9 +149,9 @@ impl Writer {
     /// Low level API to write a bytes of a blob
     pub fn write_blob(&mut self, blob_header: Vec<u8>, blob_body: Vec<u8>) -> Result<(), anyhow::Error> {
         let blob_header_len: i32 = blob_header.len() as i32;
-        self.file.write(&blob_header_len.to_be_bytes())?;
-        self.file.write(&blob_header)?;
-        self.file.write(&blob_body)?;
+        self.file.write_all(&blob_header_len.to_be_bytes())?;
+        self.file.write_all(&blob_header)?;
+        self.file.write_all(&blob_body)?;
         self.file.flush()?;
         Ok(())
     }

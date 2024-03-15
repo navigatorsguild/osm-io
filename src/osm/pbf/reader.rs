@@ -208,7 +208,10 @@ impl Reader {
         if let true = required.is_subset(&supported) {
             vec![]
         } else {
-            required.difference(&supported).into_iter().map(|e| e.clone().clone()).collect::<Vec<String>>()
+            required.difference(&supported)
+                .into_iter()
+                .map(|e| (*e).clone())
+                .collect::<Vec<String>>()
         }
     }
 

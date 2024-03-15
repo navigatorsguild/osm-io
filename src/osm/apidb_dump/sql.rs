@@ -36,13 +36,18 @@ pub(crate) fn parse_sql_null_string(s: &str) -> Option<String> {
 }
 
 pub(crate) fn to_sql_time(t: i64) -> String {
-    let datetime = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp_opt(t / 1000, 0).unwrap(), Utc);
+    let datetime = DateTime::<Utc>::from_naive_utc_and_offset(
+        NaiveDateTime::from_timestamp_millis(t).unwrap(),
+        Utc,
+    );
     let sql_time: String = datetime.to_rfc3339_opts(SecondsFormat::Secs, true);
     sql_time.replace("T", " ").replace("Z", "")
 }
 
 pub(crate) fn to_sql_time_micro(t: i64) -> String {
-    let datetime = DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp_opt(t / (1e9 as i64), (t % (1e9 as i64)) as u32).unwrap(), Utc);
+    let datetime = DateTime::<Utc>::from_naive_utc_and_offset(
+        NaiveDateTime::from_timestamp_micros(t).unwrap(), Utc,
+    );
     let sql_time: String = datetime.to_rfc3339_opts(SecondsFormat::Micros, true);
     sql_time.replace("T", " ").replace("Z", "")
 }

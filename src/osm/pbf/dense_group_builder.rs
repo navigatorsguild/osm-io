@@ -46,7 +46,7 @@ impl DenseGroupBuilder {
         dense.as_mut().unwrap().denseinfo = Some(DenseInfo::default());
         dense.as_mut().unwrap().denseinfo.as_mut().unwrap().visible.push(node.visible());
 
-        last_timestamp = node.timestamp() * date_granularity as i64 / 1000 as i64;
+        last_timestamp = node.timestamp() / date_granularity as i64;
         dense.as_mut().unwrap().denseinfo.as_mut().unwrap().timestamp.push(last_timestamp);
 
         dense.as_mut().unwrap().denseinfo.as_mut().unwrap().version.push(node.version());
@@ -98,7 +98,7 @@ impl DenseGroupBuilder {
 
         self.dense.as_mut().unwrap().denseinfo.as_mut().unwrap().visible.push(node.visible());
 
-        let current_timestamp = node.timestamp() * self.date_granularity  as i64 / 1000 as i64;
+        let current_timestamp = node.timestamp() / self.date_granularity as i64;
         self.dense.as_mut().unwrap().denseinfo.as_mut().unwrap().timestamp.push(current_timestamp - self.last_timestamp);
         self.last_timestamp = current_timestamp;
 

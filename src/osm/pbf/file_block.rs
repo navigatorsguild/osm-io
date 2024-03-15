@@ -1,10 +1,10 @@
 use std::fs::File;
-use std::io::{Cursor, Read, Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek, SeekFrom, Write};
 
 use anyhow::{anyhow, Context};
 use flate2::bufread::ZlibDecoder;
 use flate2::Compression;
-use flate2::read::ZlibEncoder;
+use flate2::write::ZlibEncoder;
 use prost::Message;
 
 use crate::{osm, osmpbf};
@@ -15,7 +15,7 @@ use crate::osm::pbf::compression_type::CompressionType;
 use crate::osm::pbf::file_block_metadata::FileBlockMetadata;
 use crate::osm::pbf::osm_data::OsmData;
 use crate::osm::pbf::osm_header::OsmHeader;
-use crate::osmpbf::{Blob, BlobHeader};
+use crate::osmpbf::BlobHeader;
 use crate::osmpbf::blob::Data;
 
 /// A header or data file block in *.osm.pbf file
@@ -57,10 +57,22 @@ impl FileBlock {
         }
     }
 
+    #[allow(dead_code)]
+    pub(crate) fn index(&self) -> usize {
+        match self {
+            FileBlock::Header { metadata, header: _header } => {
+                metadata.index()
+            }
+            FileBlock::Data { metadata, data: _data } => {
+                metadata.index()
+            }
+        }
+    }
+
     pub(crate) fn from_elements(index: usize, elements: Vec<Element>) -> FileBlock {
         FileBlock::Data {
             metadata: FileBlockMetadata::new("OSMData".to_string(), index),
-            data: OsmData::from_elements( elements, None),
+            data: OsmData::from_elements(elements, None),
         }
     }
 
@@ -91,9 +103,10 @@ impl FileBlock {
     }
 
     fn zlib_encode(buf: Vec<u8>, compression_level: Compression) -> Result<Vec<u8>, anyhow::Error> {
-        let mut encoder = ZlibEncoder::new(buf.as_slice(), compression_level);
-        let mut encoded = Vec::<u8>::new();
-        encoder.read_to_end(&mut encoded)?;
+        let mut encoder = ZlibEncoder::new(Vec::new(), compression_level);
+        encoder.write_all(buf.as_slice())?;
+        encoder.flush()?;
+        let encoded = encoder.finish()?;
         Ok(encoded)
     }
 
@@ -176,19 +189,17 @@ impl FileBlock {
                     Some(osmpbf::blob::Data::Raw(block_data))
                 }
                 CompressionType::Zlib => {
-                    Some(osmpbf::blob::Data::ZlibData(Self::zlib_encode(block_data, compression_level)?))
+                    let encoded = Self::zlib_encode(block_data, compression_level)?;
+                    Some(osmpbf::blob::Data::ZlibData(encoded))
                 }
             };
         }
 
-        let blob = Blob {
+        let blob = osmpbf::Blob {
             raw_size,
             data,
         };
-
-        let mut body = Vec::<u8>::with_capacity(blob.encoded_len());
-        blob.encode(&mut body)?;
-
+        let body = blob.encode_to_vec();
 
         let blob_header = BlobHeader {
             r#type: blob_type,
@@ -196,8 +207,8 @@ impl FileBlock {
             datasize: body.len() as i32,
         };
 
-        let mut header = Vec::<u8>::with_capacity(blob_header.encoded_len());
-        blob_header.encode(&mut header)?;
+
+        let header = blob_header.encode_to_vec();
 
         Ok((header, body))
     }

@@ -403,12 +403,12 @@ impl Writer {
             let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
                                changeset_id,
                                user_id,
-                               to_sql_time_micro(t.timestamp_nanos()),
+                               to_sql_time_micro(t.timestamp_micros()),
                                -900000000,
                                900000000,
                                -1800000000,
                                1800000000,
-                               to_sql_time_micro(t.timestamp_nanos()),
+                               to_sql_time_micro(t.timestamp_micros()),
                                0
             );
             self.writers.changesets.writer().write(line.as_bytes())?;
@@ -428,7 +428,7 @@ impl Writer {
                                format!("osm-admin-user-{}@example.com", user_id),
                                user_id,
                                "00000000000000000000000000000000",
-                               to_sql_time_micro(t.timestamp_nanos()),
+                               to_sql_time_micro(t.timestamp_micros()),
                                user_name,
                                to_sql_bool(true),
                                user_name,
