@@ -47,7 +47,7 @@ pub fn main() -> Result<(), anyhow::Error> {
     match info.osmosis_replication_timestamp() {
         None => {}
         Some(t) => {
-            println!("osmosis_replication_timestamp: {}", osm::converters::timestamp_to_iso8601_seconds(t * 1e9 as i64))
+            println!("osmosis_replication_timestamp: {}", osm::converters::timestamp_to_iso8601_seconds(t * 1e6 as i64))
         }
     }
 

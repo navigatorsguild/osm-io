@@ -42,7 +42,7 @@ impl WaysGroupBuilder {
         w.info.as_mut().unwrap().visible = Some(way.visible());
         w.info.as_mut().unwrap().uid = Some(way.uid());
         w.info.as_mut().unwrap().changeset = Some(way.changeset());
-        w.info.as_mut().unwrap().timestamp = Some(way.timestamp() * date_granularity as i64 / 1000 as i64);
+        w.info.as_mut().unwrap().timestamp = Some(way.timestamp() / date_granularity as i64);
         w.info.as_mut().unwrap().version = Some(way.version());
         w.info.as_mut().unwrap().user_sid = Some(string_table_builder.add(way.user()) as u32);
         w
