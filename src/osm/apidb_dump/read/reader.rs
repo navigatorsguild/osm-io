@@ -71,7 +71,7 @@ impl Reader {
     fn sort_tables(tables: &HashMap<String, TableDef>) -> Result<(), anyhow::Error> {
         for (table_name, table_def) in tables {
             log::info!("Sort {} table data", table_name);
-            std::fs::create_dir_all(table_def.tmp_path())?;
+            fs::create_dir_all(table_def.tmp_path())?;
             let mut text_file = Sort::new(vec![table_def.path()], table_def.sorted_path());
             text_file.with_tmp_dir(table_def.tmp_path());
             text_file.with_intermediate_files(8192);

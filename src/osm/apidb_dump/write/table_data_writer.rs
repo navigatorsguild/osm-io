@@ -2,7 +2,7 @@ use std::borrow::BorrowMut;
 use std::fmt::{Debug, Formatter};
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::Context;
 
@@ -13,8 +13,8 @@ pub(crate) struct TableDataWriter {
 }
 
 impl TableDataWriter {
-    pub(crate) fn new(table_name: String, file_name: String, output_path: &PathBuf) -> Result<TableDataWriter, anyhow::Error> {
-        let file_path = output_path.join(&file_name);
+    pub(crate) fn new(table_name: String, file_name: String, output_path: &Path) -> Result<TableDataWriter, anyhow::Error> {
+        let file_path = output_path.join(file_name);
         let writer = BufWriter::new(File::create(&file_path)?);
         Ok(TableDataWriter {
             table_name,

@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use anyhow;
 use benchmark_rs::stopwatch::StopWatch;
 use simple_logger::SimpleLogger;
 
@@ -15,13 +14,13 @@ pub fn main() -> Result<(), anyhow::Error> {
     let input_path = PathBuf::from("./tests/fixtures/niue-230109.osm.pbf");
     let reader = pbf::reader::Reader::new(&input_path)?;
 
-    let mut nodes = 0 as usize;
-    let mut ways = 0 as usize;
-    let mut relations = 0 as usize;
+    let mut nodes = 0usize;
+    let mut ways = 0usize;
+    let mut relations = 0usize;
 
-    let mut tourism_nodes = 0 as usize;
-    let mut tourism_ways = 0 as usize;
-    let mut tourism_relations = 0 as usize;
+    let mut tourism_nodes = 0usize;
+    let mut tourism_ways = 0usize;
+    let mut tourism_relations = 0usize;
 
     for element in reader.elements()? {
         match element {

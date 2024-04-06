@@ -20,11 +20,10 @@ impl Iterator for FileBlockIterator {
     fn next(&mut self) -> Option<Self::Item> {
         let blob_desc = self.blob_iterator.next()?;
         Some(
-            FileBlock::from_blob_desc(&blob_desc).expect(
-                format!("Failed to create a file block from blob {} from {:?}",
-                    blob_desc.index(),
-                    blob_desc.path()).as_str()
-            )
+            FileBlock::from_blob_desc(&blob_desc)
+                .unwrap_or_else(|_| panic!("Failed to create a file block from blob {} from {:?}",
+                                           blob_desc.index(),
+                                           blob_desc.path()))
         )
     }
 }

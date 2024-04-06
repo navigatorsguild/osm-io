@@ -23,6 +23,7 @@ impl WaysGroupBuilder {
         self.ways.as_mut().unwrap().push(Self::convert(way, self.date_granularity, string_table_builder));
     }
 
+    #[allow(clippy::field_reassign_with_default)]
     fn convert(way: &Way, date_granularity: i32, string_table_builder: &mut StringTableBuilder) -> osmpbf::Way {
         let mut w = osmpbf::Way::default();
         w.id = way.id();
@@ -48,6 +49,7 @@ impl WaysGroupBuilder {
         w
     }
 
+    #[allow(clippy::field_reassign_with_default)]
     pub(crate) fn build(&mut self) -> PrimitiveGroup {
         let mut primitive_group = PrimitiveGroup::default();
         primitive_group.ways = self.ways.replace(Vec::<osmpbf::Way>::new()).unwrap();

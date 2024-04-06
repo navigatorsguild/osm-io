@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use anyhow::{Context, Error};
 use escape_string::escape;
 
-use crate::osm::apidb_dump::sql::{calculate_tile, to_sql_bool, to_sql_time, to_sql_time_micro};
+use crate::osm::apidb_dump::sql::{calculate_tile, to_sql_bool, to_sql_time_millis, to_sql_time_micros};
 use crate::osm::apidb_dump::write::current_object::{CurrentObjectLine, CurrentObjectLines};
 use crate::osm::apidb_dump::write::table_data_writers::TableDataWriters;
 use crate::osm::apidb_dump::write::toc::{load_template_mapping, write_toc};
@@ -39,7 +39,7 @@ impl Writer {
     /// * output_path - directory to write the output to. Must contain enough space which is very
     /// difficult to calculate because the *.osm.pbf input is so condensed that 1GB of input can
     /// easily transform into 100GB of output.
-    pub fn new(output_path: PathBuf, compression_level: i8) -> Result<Writer, anyhow::Error> {
+    pub fn new(output_path: PathBuf, compression_level: i8) -> Result<Writer, Error> {
         Self::create_result_dir(&output_path)?;
         let writers = TableDataWriters::new(load_template_mapping()?, &output_path)?;
         Ok(
@@ -60,7 +60,7 @@ impl Writer {
     }
 
     /// Write an element
-    pub fn write_element(&mut self, element: Element) -> Result<(), anyhow::Error> {
+    pub fn write_element(&mut self, element: Element) -> Result<(), Error> {
         match element {
             Element::Node { node } => {
                 self.write_node(node)?;
@@ -88,7 +88,7 @@ impl Writer {
                                         node.coordinate().lon7(),
                                         node.changeset(),
                                         to_sql_bool(node.visible()),
-                                        to_sql_time(node.timestamp()),
+                                        to_sql_time_millis(node.timestamp()),
                                         calculate_tile(node.coordinate().lat(), node.coordinate().lon()),
                                         node.version()
         );
@@ -96,7 +96,7 @@ impl Writer {
         match self.current_node_line.set_last_line(current_node_line, node.id(), node.visible()) {
             None => {}
             Some(current_node_line) => {
-                self.writers.current_nodes.writer().write(current_node_line.as_bytes())?;
+                self.writers.current_nodes.writer().write_all(current_node_line.as_bytes())?;
             }
         }
         self.current_node_line.set_last_id(node.id());
@@ -109,27 +109,27 @@ impl Writer {
                                 node.coordinate().lon7(),
                                 node.changeset(),
                                 to_sql_bool(node.visible()),
-                                to_sql_time(node.timestamp()),
+                                to_sql_time_millis(node.timestamp()),
                                 calculate_tile(node.coordinate().lat(), node.coordinate().lon()),
                                 node.version()
         );
 
-        self.writers.nodes.writer().write(node_line.as_bytes())?;
+        self.writers.nodes.writer().write_all(node_line.as_bytes())?;
 
         let mut current_node_tag_lines = Vec::new();
         let tags = node.take_tags();
         for tag in tags {
             // public.node_tags (node_id, version, k, v)
             // template context: 4259.dat
-            let escaped_key = escape(&tag.k());
-            let escaped_tag = escape(&tag.v());
+            let escaped_key = escape(tag.k());
+            let escaped_tag = escape(tag.v());
             let node_tag_line = format!("{}\t{}\t{}\t{}\n",
                                         node.id(),
                                         node.version(),
                                         escaped_key,
                                         escaped_tag,
             );
-            self.writers.node_tags.writer().write(node_tag_line.as_bytes())?;
+            self.writers.node_tags.writer().write_all(node_tag_line.as_bytes())?;
 
             // public.current_node_tags (node_id, k, v)
             // template context: 4227.dat
@@ -138,7 +138,6 @@ impl Writer {
                                                 escaped_key,
                                                 escaped_tag,
             );
-            // self.writers.current_node_tags.writer().write(current_node_tag_line.as_bytes())?;
             current_node_tag_lines.push(current_node_tag_line);
         }
 
@@ -146,7 +145,7 @@ impl Writer {
             None => {}
             Some(current_node_tag_lines) => {
                 for current_node_tag_line in current_node_tag_lines {
-                    self.writers.current_node_tags.writer().write(current_node_tag_line.as_bytes())?;
+                    self.writers.current_node_tags.writer().write_all(current_node_tag_line.as_bytes())?;
                 }
             }
         }
@@ -179,14 +178,14 @@ impl Writer {
                                         way.version(),
                                         sequence_id + 1
             );
-            self.writers.way_nodes.writer().write(way_node_line.as_bytes())?;
+            self.writers.way_nodes.writer().write_all(way_node_line.as_bytes())?;
         }
 
         match self.current_way_node_lines.set_last_lines(current_way_node_lines, way.id(), way.visible()) {
             None => {}
             Some(current_way_node_lines) => {
                 for current_way_node_line in current_way_node_lines {
-                    self.writers.current_way_nodes.writer().write(current_way_node_line.as_bytes())?;
+                    self.writers.current_way_nodes.writer().write_all(current_way_node_line.as_bytes())?;
                 }
             }
         }
@@ -197,8 +196,8 @@ impl Writer {
         for tag in way.take_tags() {
             // public.current_way_tags (way_id, k, v)
             // template context: 4235.dat
-            let escaped_key = escape(&tag.k());
-            let escaped_tag = escape_string::escape(tag.v());
+            let escaped_key = escape(tag.k());
+            let escaped_tag = escape(tag.v());
             let current_way_tag_line = format!("{}\t{}\t{}\n",
                                                way.id(),
                                                escaped_key,
@@ -214,14 +213,14 @@ impl Writer {
                                             escaped_tag,
                                             way.version()
             );
-            self.writers.way_tags.writer().write(way_tag_line_line.as_bytes())?;
+            self.writers.way_tags.writer().write_all(way_tag_line_line.as_bytes())?;
         }
 
         match self.current_way_tag_lines.set_last_lines(current_way_tag_lines, way.id(), way.visible()) {
             None => {}
             Some(current_way_tag_lines) => {
                 for current_way_tag_line in current_way_tag_lines {
-                    self.writers.current_way_tags.writer().write(current_way_tag_line.as_bytes())?;
+                    self.writers.current_way_tags.writer().write_all(current_way_tag_line.as_bytes())?;
                 }
             }
         }
@@ -232,7 +231,7 @@ impl Writer {
         let current_way_line = format!("{}\t{}\t{}\t{}\t{}\n",
                                        way.id(),
                                        way.changeset(),
-                                       to_sql_time(way.timestamp()),
+                                       to_sql_time_millis(way.timestamp()),
                                        to_sql_bool(way.visible()),
                                        way.version(),
         );
@@ -240,7 +239,7 @@ impl Writer {
         match self.current_way_line.set_last_line(current_way_line, way.id(), way.visible()) {
             None => {}
             Some(current_way_line) => {
-                self.writers.current_ways.writer().write(current_way_line.as_bytes())?;
+                self.writers.current_ways.writer().write_all(current_way_line.as_bytes())?;
             }
         }
         self.current_way_line.set_last_id(way.id());
@@ -250,11 +249,11 @@ impl Writer {
         let way_line = format!("{}\t{}\t{}\t{}\t{}\t\\N\n",
                                way.id(),
                                way.changeset(),
-                               to_sql_time(way.timestamp()),
+                               to_sql_time_millis(way.timestamp()),
                                way.version(),
                                to_sql_bool(way.visible()),
         );
-        self.writers.ways.writer().write(way_line.as_bytes())?;
+        self.writers.ways.writer().write_all(way_line.as_bytes())?;
 
         Ok(())
     }
@@ -278,7 +277,7 @@ impl Writer {
 
             // public.current_relation_members (relation_id, member_type, member_id, member_role, sequence_id)
             // template context: 4230.dat
-            let escaped_role = escape_string::escape(member_role);
+            let escaped_role = escape(member_role);
             let current_relation_member_line = format!("{}\t{}\t{}\t{}\t{}\n",
                                                        relation.id(),
                                                        member_type,
@@ -298,14 +297,14 @@ impl Writer {
                                                relation.version(),
                                                sequence_id + 1,
             );
-            self.writers.relation_members.writer().write(relation_member_line.as_bytes())?;
+            self.writers.relation_members.writer().write_all(relation_member_line.as_bytes())?;
         }
 
         match self.current_relation_member_lines.set_last_lines(current_relation_member_lines, relation.id(), relation.visible()) {
             None => {}
             Some(current_relation_member_lines) => {
                 for current_relation_member_line in current_relation_member_lines {
-                    self.writers.current_relation_members.writer().write(current_relation_member_line.as_bytes())?;
+                    self.writers.current_relation_members.writer().write_all(current_relation_member_line.as_bytes())?;
                 }
             }
         }
@@ -315,8 +314,8 @@ impl Writer {
         for tag in relation.take_tags() {
             // public.current_relation_tags (relation_id, k, v)
             // template context: 4231.dat
-            let escaped_key = escape(&tag.k());
-            let escaped_tag = escape_string::escape(&tag.v());
+            let escaped_key = escape(tag.k());
+            let escaped_tag = escape(tag.v());
             let current_relation_tag_line = format!("{}\t{}\t{}\n",
                                                     relation.id(),
                                                     escaped_key,
@@ -332,14 +331,14 @@ impl Writer {
                                             escaped_tag,
                                             relation.version(),
             );
-            self.writers.relation_tags.writer().write(relation_tag_line.as_bytes())?;
+            self.writers.relation_tags.writer().write_all(relation_tag_line.as_bytes())?;
         }
 
         match self.current_relation_tag_lines.set_last_lines(current_relation_tag_lines, relation.id(), relation.visible()) {
             None => {}
             Some(current_relation_tag_lines) => {
                 for current_relation_tag_line in current_relation_tag_lines {
-                    self.writers.current_relation_tags.writer().write(current_relation_tag_line.as_bytes())?;
+                    self.writers.current_relation_tags.writer().write_all(current_relation_tag_line.as_bytes())?;
                 }
             }
         }
@@ -351,7 +350,7 @@ impl Writer {
         let current_relation_line = format!("{}\t{}\t{}\t{}\t{}\n",
                                             relation.id(),
                                             relation.changeset(),
-                                            to_sql_time(relation.timestamp()),
+                                            to_sql_time_millis(relation.timestamp()),
                                             to_sql_bool(relation.visible()),
                                             relation.version(),
         );
@@ -359,7 +358,7 @@ impl Writer {
         match self.current_relation_line.set_last_line(current_relation_line, relation.id(), relation.visible()) {
             None => {}
             Some(current_relation_line) => {
-                self.writers.current_relations.writer().write(current_relation_line.as_bytes())?;
+                self.writers.current_relations.writer().write_all(current_relation_line.as_bytes())?;
             }
         }
         self.current_relation_line.set_last_id(relation.id());
@@ -369,11 +368,11 @@ impl Writer {
         let relation_line = format!("{}\t{}\t{}\t{}\t{}\t\\N\n",
                                     relation.id(),
                                     relation.changeset(),
-                                    to_sql_time(relation.timestamp()),
+                                    to_sql_time_millis(relation.timestamp()),
                                     relation.version(),
                                     to_sql_bool(relation.visible()),
         );
-        self.writers.relations.writer().write(relation_line.as_bytes())?;
+        self.writers.relations.writer().write_all(relation_line.as_bytes())?;
 
         Ok(())
     }
@@ -383,19 +382,20 @@ impl Writer {
             let (changeset_id, user_id) = element?;
             // public.changeset_tags (changeset_id, k, v)
             // template context: 4221.dat
+            let lib_name = format!("osm-io {}", env!("CARGO_PKG_VERSION"));
             let line = format!("{}\t{}\t{}\n",
                                changeset_id,
                                "created_by",
-                               format!("osm-io {}", option_env!("CARGO_PKG_VERSION").unwrap()),
+                               lib_name,
             );
-            self.writers.changeset_tags.writer().write(line.as_bytes())?;
+            self.writers.changeset_tags.writer().write_all(line.as_bytes())?;
 
             let line = format!("{}\t{}\t{}\n",
                                changeset_id,
                                "replication",
                                "true"
             );
-            self.writers.changeset_tags.writer().write(line.as_bytes())?;
+            self.writers.changeset_tags.writer().write_all(line.as_bytes())?;
 
             // public.changesets (id, user_id, created_at, min_lat, max_lat, min_lon, max_lon, closed_at, num_changes)
             // template context: 4222.dat
@@ -403,15 +403,15 @@ impl Writer {
             let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
                                changeset_id,
                                user_id,
-                               to_sql_time_micro(t.timestamp_micros()),
+                               to_sql_time_micros(t.timestamp_micros()),
                                -900000000,
                                900000000,
                                -1800000000,
                                1800000000,
-                               to_sql_time_micro(t.timestamp_micros()),
+                               to_sql_time_micros(t.timestamp_micros()),
                                0
             );
-            self.writers.changesets.writer().write(line.as_bytes())?;
+            self.writers.changesets.writer().write_all(line.as_bytes())?;
         }
 
         Ok(())
@@ -424,11 +424,12 @@ impl Writer {
             let (user_id, user_name) = element?;
 
             let t = chrono::offset::Utc::now();
+            let osm_admin_user = format!("osm-admin-user-{}@example.com", user_id);
             let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
-                               format!("osm-admin-user-{}@example.com", user_id),
+                               osm_admin_user,
                                user_id,
                                "00000000000000000000000000000000",
-                               to_sql_time_micro(t.timestamp_micros()),
+                               to_sql_time_micros(t.timestamp_micros()),
                                user_name,
                                to_sql_bool(true),
                                user_name,
@@ -455,7 +456,7 @@ impl Writer {
                                "\\N",
                                "\\N",
             );
-            self.writers.users.writer().write(line.as_bytes())?;
+            self.writers.users.writer().write_all(line.as_bytes())?;
         }
 
         Ok(())
@@ -465,7 +466,7 @@ impl Writer {
         match self.current_node_line.take() {
             None => {}
             Some(current_node_line) => {
-                self.writers.current_nodes.writer().write(current_node_line.as_bytes())?;
+                self.writers.current_nodes.writer().write_all(current_node_line.as_bytes())?;
             }
         }
 
@@ -473,7 +474,7 @@ impl Writer {
             None => {}
             Some(current_node_tag_lines) => {
                 for current_node_tag_line in current_node_tag_lines {
-                    self.writers.current_node_tags.writer().write(current_node_tag_line.as_bytes())?;
+                    self.writers.current_node_tags.writer().write_all(current_node_tag_line.as_bytes())?;
                 }
             }
         }
@@ -481,7 +482,7 @@ impl Writer {
         match self.current_way_line.take() {
             None => {}
             Some(current_way_line) => {
-                self.writers.current_ways.writer().write(current_way_line.as_bytes())?;
+                self.writers.current_ways.writer().write_all(current_way_line.as_bytes())?;
             }
         }
 
@@ -489,7 +490,7 @@ impl Writer {
             None => {}
             Some(current_way_tag_lines) => {
                 for current_way_tag_line in current_way_tag_lines {
-                    self.writers.current_way_tags.writer().write(current_way_tag_line.as_bytes())?;
+                    self.writers.current_way_tags.writer().write_all(current_way_tag_line.as_bytes())?;
                 }
             }
         }
@@ -498,7 +499,7 @@ impl Writer {
             None => {}
             Some(current_way_node_lines) => {
                 for current_way_node_line in current_way_node_lines {
-                    self.writers.current_way_nodes.writer().write(current_way_node_line.as_bytes())?;
+                    self.writers.current_way_nodes.writer().write_all(current_way_node_line.as_bytes())?;
                 }
             }
         }
@@ -506,7 +507,7 @@ impl Writer {
         match self.current_relation_line.take() {
             None => {}
             Some(current_relation_line) => {
-                self.writers.current_relations.writer().write(current_relation_line.as_bytes())?;
+                self.writers.current_relations.writer().write_all(current_relation_line.as_bytes())?;
             }
         }
 
@@ -514,7 +515,7 @@ impl Writer {
             None => {}
             Some(current_relation_tag_lines) => {
                 for current_relation_tag_line in current_relation_tag_lines {
-                    self.writers.current_relation_tags.writer().write(current_relation_tag_line.as_bytes())?;
+                    self.writers.current_relation_tags.writer().write_all(current_relation_tag_line.as_bytes())?;
                 }
             }
         }
@@ -523,7 +524,7 @@ impl Writer {
             None => {}
             Some(current_relation_member_lines) => {
                 for current_relation_member_line in current_relation_member_lines {
-                    self.writers.current_relation_members.writer().write(current_relation_member_line.as_bytes())?;
+                    self.writers.current_relation_members.writer().write_all(current_relation_member_line.as_bytes())?;
                 }
             }
         }
@@ -547,7 +548,7 @@ impl Writer {
     }
 
     fn create_result_dir(output_path: &PathBuf) -> Result<(), Error> {
-        fs::create_dir_all(&output_path).with_context(|| format!("Failed to create dir: {:?}", output_path))?;
+        fs::create_dir_all(output_path).with_context(|| format!("Failed to create dir: {:?}", output_path))?;
         write_toc(output_path)?;
 
         Ok(())

@@ -49,7 +49,7 @@ impl TableDef {
 
     #[allow(dead_code)]
     pub(crate) fn fields(&self) -> TableFields {
-        self.fields.clone()
+        self.fields
     }
 
     pub(crate) fn fields_ref(&self) -> &TableFields {

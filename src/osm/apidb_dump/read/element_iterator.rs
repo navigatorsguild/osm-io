@@ -126,10 +126,10 @@ impl Iterator for ElementIterator {
                                     n.node().node_id(),
                                     n.node().version() as i32,
                                     Coordinate::new(
-                                        n.node().latitude() as f64 / 10000000.0 as f64,
-                                        n.node().longitude() as f64 / 10000000.0 as f64,
+                                        n.node().latitude() as f64 / 10000000.0f64,
+                                        n.node().longitude() as f64 / 10000000.0f64,
                                     ),
-                                    n.node().timestamp().timestamp(),
+                                    n.node().timestamp().and_utc().timestamp(),
                                     changeset_id,
                                     uid as i32,
                                     user,
@@ -162,7 +162,7 @@ impl Iterator for ElementIterator {
                                 way: Way::new(
                                     w.way().way_id(),
                                     w.way().version() as i32,
-                                    w.way().timestamp().timestamp(),
+                                    w.way().timestamp().and_utc().timestamp(),
                                     changeset_id,
                                     uid as i32,
                                     user,
@@ -199,7 +199,7 @@ impl Iterator for ElementIterator {
                                 relation: Relation::new(
                                     r.relation().relation_id(),
                                     r.relation().version() as i32,
-                                    r.relation().timestamp().timestamp(),
+                                    r.relation().timestamp().and_utc().timestamp(),
                                     changeset_id,
                                     uid as i32,
                                     user,

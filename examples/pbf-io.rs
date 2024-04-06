@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use anyhow;
 use benchmark_rs::stopwatch::StopWatch;
 use simple_logger::SimpleLogger;
 

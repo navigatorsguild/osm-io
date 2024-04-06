@@ -53,7 +53,8 @@ impl ThreadLocalAccumulator {
         })
     }
 
-    pub fn len(&self) -> usize {
+    #[allow(dead_code)]
+    pub(crate) fn len(&self) -> usize {
         ACCUMULATORS.with(|accumulators| {
             if !accumulators.borrow().contains_key(self.id.as_str()) {
                 0

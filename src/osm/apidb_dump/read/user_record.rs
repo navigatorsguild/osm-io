@@ -98,6 +98,7 @@ pub(crate) struct UserRecord {
     tou_agreed: Option<NaiveDateTime>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl UserRecord {
     pub(crate) fn new(
         email: String,

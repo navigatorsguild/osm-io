@@ -13,6 +13,7 @@ pub(crate) struct NodeRecord {
     redaction_id: Option<i32>,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl NodeRecord {
     pub(crate) fn new(
         node_id: i64,

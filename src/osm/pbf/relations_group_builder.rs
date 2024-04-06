@@ -23,6 +23,7 @@ impl RelationsGroupBuilder {
         self.relations.as_mut().unwrap().push(Self::convert(relation, self.date_granularity, string_table_builder));
     }
 
+    #[allow(clippy::field_reassign_with_default)]
     fn convert(relation: &Relation, date_granularity: i32, string_table_builder: &mut StringTableBuilder) -> osmpbf::Relation {
         let mut r = osmpbf::Relation::default();
 
@@ -68,6 +69,7 @@ impl RelationsGroupBuilder {
         r
     }
 
+    #[allow(clippy::field_reassign_with_default)]
     pub(crate) fn build(&mut self) -> PrimitiveGroup {
         let mut primitive_group = PrimitiveGroup::default();
         primitive_group.relations = self.relations.replace(Vec::<osmpbf::Relation>::new()).unwrap();

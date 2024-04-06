@@ -73,20 +73,23 @@ impl TablePkey {
                 error = Some(anyhow!("No primary key defined for table: {}", name));
             }
         }
-        if error.is_some() {
-            Err(error.unwrap())
-        } else {
-            Ok(
-                TablePkey {
-                    name,
-                    key,
-                }
-            )
+        match error {
+            None => {
+                Ok(
+                    TablePkey {
+                        name,
+                        key,
+                    }
+                )
+            }
+            Some(e) => {
+                Err(e)
+            }
         }
     }
 
-    fn index(v: &str, fields: &Vec<String>) -> Result<usize, anyhow::Error> {
-        match fields.iter().position(|e| { *e == v.to_string() }) {
+    fn index(v: &str, fields: &[String]) -> Result<usize, anyhow::Error> {
+        match fields.iter().position(|e| { e == &v.to_string() }) {
             None => {
                 Err(anyhow!("Field not found: {}", v))
             }

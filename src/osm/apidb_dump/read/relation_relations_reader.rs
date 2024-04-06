@@ -79,7 +79,7 @@ impl Iterator for RelationRelationsIterator {
                 if let Some(relation_tag_record) = self.next_relation_tag_record.take() {
                     if relation_tag_record.relation_id() == relation_record.relation_id() && relation_tag_record.version() == relation_record.version() {
                         current_relation_tags.push(relation_tag_record);
-                        while let Some(relation_tag) = self.relation_tags_iterator.next() {
+                        for relation_tag in self.relation_tags_iterator.by_ref() {
                             if let TableRecord::RelationTag { relation_tag_record } = relation_tag {
                                 if relation_tag_record.relation_id() == relation_record.relation_id() && relation_tag_record.version() == relation_record.version() {
                                     current_relation_tags.push(relation_tag_record)
@@ -113,7 +113,7 @@ impl Iterator for RelationRelationsIterator {
                 if let Some(relation_member_record) = self.next_relation_member_record.take() {
                     if relation_member_record.relation_id() == relation_record.relation_id() && relation_member_record.version() == relation_record.version() {
                         current_relation_members.push(relation_member_record);
-                        while let Some(relation_member) = self.relation_members_iterator.next() {
+                        for relation_member in self.relation_members_iterator.by_ref() {
                             if let TableRecord::RelationMember { relation_member_record } = relation_member {
                                 if relation_member_record.relation_id() == relation_record.relation_id() && relation_member_record.version() == relation_record.version() {
                                     current_relation_members.push(relation_member_record)

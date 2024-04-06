@@ -87,7 +87,7 @@ impl FromStr for BoundingBox {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let e = anyhow!("Bounding box string must be in the form of 'left,bottom,right,top' as in -180.0, -90.0, 180.0, 90.0 with optional white space around commas. Got {} instead", s);
-        let parts: Vec<&str> = s.split(",")
+        let parts: Vec<&str> = s.split(',')
             .map(|s| s.trim())
             .collect();
         if parts.len() < 4 {
@@ -97,10 +97,10 @@ impl FromStr for BoundingBox {
             let bottom = f64::from_str(parts[1])?;
             let right = f64::from_str(parts[2])?;
             let top = f64::from_str(parts[3])?;
-            if left > 180.0 || left < -180.0
-                || bottom > 90.0 || bottom < -90.0
-                || right > 180.0 || right < -180.0
-                || top > 90.0 || top < -90.0
+            if !(-180.0..=180.0).contains(&left)
+                || !(-90.0..=90.0).contains(&bottom)
+                || !(-180.0..=180.0).contains(&right)
+                || !(-90.0..=90.0).contains(&top)
             {
                 Err(e)
             } else {

@@ -13,6 +13,7 @@ pub(crate) struct ChangesetRecord {
     num_changes: i32,
 }
 
+#[allow(clippy::too_many_arguments)]
 impl ChangesetRecord {
     pub(crate) fn new(
         id: i64,

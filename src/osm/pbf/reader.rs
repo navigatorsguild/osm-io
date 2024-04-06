@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -35,7 +35,7 @@ impl Reader {
     /// let input_path = PathBuf::from("./planet.osm.pbf");
     /// let reader = Reader::new(&input_path);
     /// ```
-    pub fn new(path: &PathBuf) -> Result<Reader, anyhow::Error> {
+    pub fn new(path: &Path) -> Result<Reader, anyhow::Error> {
         let supported_features = vec![
             "OsmSchema-V0.6".to_string(),
             "DenseNodes".to_string(),
@@ -45,7 +45,7 @@ impl Reader {
 
         let mut reader = Reader {
             supported_features,
-            path: path.clone(),
+            path: path.to_path_buf(),
             info: Default::default(),
         };
         let mut block_iterator = reader.clone().blocks()?;
@@ -57,7 +57,7 @@ impl Reader {
 
         Self::verify_supported_features(
             &reader.supported_features,
-            &reader.info().required_features(),
+            reader.info().required_features(),
         )?;
 
         Ok(
@@ -93,9 +93,9 @@ impl Reader {
     ///     let input_path = PathBuf::from("./tests/fixtures/malta-230109.osm.pbf");
     ///     let reader = pbf::reader::Reader::new(&input_path)?;
     ///
-    ///     let mut nodes = 0 as usize;
-    ///     let mut ways = 0 as usize;
-    ///     let mut relations = 0 as usize;
+    ///     let mut nodes = 0usize;
+    ///     let mut ways = 0usize;
+    ///     let mut relations = 0usize;
     ///
     ///     for element in reader.elements()? {
     ///         match element {
@@ -202,20 +202,19 @@ impl Reader {
         Ok(())
     }
 
-    fn find_missing_features(supported_features: &Vec<String>, required_features: &Vec<String>) -> Vec<String> {
-        let supported: HashSet<&String> = supported_features.into_iter().collect::<HashSet<&String>>();
-        let required: HashSet<&String> = required_features.into_iter().collect::<HashSet<&String>>();
+    fn find_missing_features(supported_features: &[String], required_features: &[String]) -> Vec<String> {
+        let supported: HashSet<&String> = supported_features.iter().collect::<HashSet<&String>>();
+        let required: HashSet<&String> = required_features.iter().collect::<HashSet<&String>>();
         if let true = required.is_subset(&supported) {
             vec![]
         } else {
             required.difference(&supported)
-                .into_iter()
                 .map(|e| (*e).clone())
                 .collect::<Vec<String>>()
         }
     }
 
-    fn verify_supported_features(supported_features: &Vec<String>, required_features: &Vec<String>) -> Result<(), anyhow::Error> {
+    fn verify_supported_features(supported_features: &[String], required_features: &[String]) -> Result<(), anyhow::Error> {
         let missing_features = Self::find_missing_features(supported_features, required_features);
         if missing_features.is_empty() {
             Ok(())

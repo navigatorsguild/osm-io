@@ -86,6 +86,7 @@ impl Writer {
     }
 
     /// Create a new [Writer]
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         path: PathBuf,
         program_name: &str,
@@ -192,7 +193,7 @@ impl Writer {
     /// Must be called in the end to write any elements accumulated in internal buffers
     pub fn close(&mut self) -> Result<(), anyhow::Error> {
         let elements = self.element_accumulator.elements();
-        if elements.len() > 0 {
+        if !elements.is_empty() {
             self.write_elements(elements)?;
         }
         Ok(())

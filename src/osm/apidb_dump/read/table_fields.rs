@@ -106,8 +106,8 @@ pub(crate) enum TableFields {
 }
 
 impl TableFields {
-    fn index(v: &str, fields: &Vec<String>) -> Result<usize, anyhow::Error> {
-        match fields.iter().position(|e| { *e == v.to_string() }) {
+    fn index(v: &str, fields: &[String]) -> Result<usize, anyhow::Error> {
+        match fields.iter().position(|e| { e == &v.to_string() }) {
             None => {
                 Err(anyhow!("Field not found: {}", v))
             }
