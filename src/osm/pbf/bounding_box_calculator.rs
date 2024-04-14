@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use command_executor::shutdown_mode::ShutdownMode;
@@ -13,9 +13,9 @@ pub struct BoundingBoxCalculator {
 }
 
 impl BoundingBoxCalculator {
-    pub fn new(path: &PathBuf) -> BoundingBoxCalculator {
+    pub fn new(path: &Path) -> BoundingBoxCalculator {
         BoundingBoxCalculator {
-            path: path.clone(),
+            path: path.to_path_buf(),
         }
     }
 

@@ -25,6 +25,7 @@ impl CalcBoundingBoxCommand {
 }
 
 impl Command for CalcBoundingBoxCommand {
+    #[allow(clippy::unnecessary_unwrap)]
     fn execute(&self) -> Result<(), anyhow::Error> {
         let file_block = FileBlock::from_blob_desc(&self.blob)?;
         if file_block.is_osm_data() {
