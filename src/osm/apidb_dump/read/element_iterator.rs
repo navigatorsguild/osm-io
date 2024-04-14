@@ -129,7 +129,7 @@ impl Iterator for ElementIterator {
                                         n.node().latitude() as f64 / 10000000.0f64,
                                         n.node().longitude() as f64 / 10000000.0f64,
                                     ),
-                                    n.node().timestamp().and_utc().timestamp(),
+                                    n.node().timestamp().and_utc().timestamp_millis(),
                                     changeset_id,
                                     uid as i32,
                                     user,
