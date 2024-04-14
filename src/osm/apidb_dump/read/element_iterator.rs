@@ -162,7 +162,7 @@ impl Iterator for ElementIterator {
                                 way: Way::new(
                                     w.way().way_id(),
                                     w.way().version() as i32,
-                                    w.way().timestamp().and_utc().timestamp(),
+                                    w.way().timestamp().and_utc().timestamp_millis(),
                                     changeset_id,
                                     uid as i32,
                                     user,
@@ -199,7 +199,7 @@ impl Iterator for ElementIterator {
                                 relation: Relation::new(
                                     r.relation().relation_id(),
                                     r.relation().version() as i32,
-                                    r.relation().timestamp().and_utc().timestamp(),
+                                    r.relation().timestamp().and_utc().timestamp_millis(),
                                     changeset_id,
                                     uid as i32,
                                     user,
