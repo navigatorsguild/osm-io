@@ -22,12 +22,12 @@ use crate::osm::apidb_dump::read::way_tag_record::WayTagRecord;
 use crate::osm::apidb_dump::sql::{parse_sql_bool, parse_sql_null_string, parse_sql_time};
 
 struct RecordBuilder {
-    f: fn(&String, &TableDef, usize) -> Option<TableRecord>,
+    f: fn(&str, &TableDef, usize) -> Option<TableRecord>,
     table_def: TableDef,
 }
 
 impl RecordBuilder {
-    fn build(&self, line: &String, line_number: usize) -> Option<TableRecord> {
+    fn build(&self, line: &str, line_number: usize) -> Option<TableRecord> {
         (self.f)(line, &self.table_def, line_number)
     }
 }
@@ -134,8 +134,8 @@ impl TableReader {
         }
     }
 
-    fn create_node(line: &String, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
-        let columns: Vec<&str> = line.trim_end_matches("\n").split("\t").collect();
+    fn create_node(line: &str, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
+        let columns: Vec<&str> = line.trim_end_matches('\n').split('\t').collect();
         match table_def.fields_ref() {
             TableFields::Nodes { node_id, latitude, longitude, changeset_id, visible, timestamp, tile, version, redaction_id } => {
                 assert!(*node_id < columns.len(), "column {} for field (node_id) is missing in {}:{}", *node_id + 1, table_def.path().display(), line_number);
@@ -169,8 +169,8 @@ impl TableReader {
         }
     }
 
-    fn create_node_tag(line: &String, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
-        let columns: Vec<&str> = line.trim_end_matches("\n").split("\t").collect();
+    fn create_node_tag(line: &str, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
+        let columns: Vec<&str> = line.trim_end_matches('\n').split('\t').collect();
         match table_def.fields_ref() {
             TableFields::NodeTags { node_id, version, k, v } => {
                 assert!(*node_id < columns.len(), "column {} for field (node_id) is missing in {}:{}", *node_id + 1, table_def.path().display(), line_number);
@@ -194,8 +194,8 @@ impl TableReader {
         }
     }
 
-    fn create_way(line: &String, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
-        let columns: Vec<&str> = line.trim_end_matches("\n").split("\t").collect();
+    fn create_way(line: &str, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
+        let columns: Vec<&str> = line.trim_end_matches('\n').split('\t').collect();
         match table_def.fields_ref() {
             TableFields::Ways { way_id, changeset_id, timestamp, version, visible, redaction_id } => {
                 assert!(*way_id < columns.len(), "column {} for field (way_id) is missing in {}:{}", *way_id + 1, table_def.path().display(), line_number);
@@ -223,8 +223,8 @@ impl TableReader {
         }
     }
 
-    fn create_way_node(line: &String, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
-        let columns: Vec<&str> = line.trim_end_matches("\n").split("\t").collect();
+    fn create_way_node(line: &str, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
+        let columns: Vec<&str> = line.trim_end_matches('\n').split('\t').collect();
         match table_def.fields_ref() {
             TableFields::WayNodes { way_id, node_id, version, sequence_id } => {
                 assert!(*way_id < columns.len(), "column {} for field (way_id) is missing in {}:{}", *way_id + 1, table_def.path().display(), line_number);
@@ -248,8 +248,8 @@ impl TableReader {
         }
     }
 
-    fn create_way_tag(line: &String, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
-        let columns: Vec<&str> = line.trim_end_matches("\n").split("\t").collect();
+    fn create_way_tag(line: &str, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
+        let columns: Vec<&str> = line.trim_end_matches('\n').split('\t').collect();
         match table_def.fields_ref() {
             TableFields::WayTags { way_id, k, v, version } => {
                 assert!(*way_id < columns.len(), "column {} for field (way_id) is missing in {}:{}", *way_id + 1, table_def.path().display(), line_number);
@@ -273,8 +273,8 @@ impl TableReader {
         }
     }
 
-    fn create_relation(line: &String, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
-        let columns: Vec<&str> = line.trim_end_matches("\n").split("\t").collect();
+    fn create_relation(line: &str, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
+        let columns: Vec<&str> = line.trim_end_matches('\n').split('\t').collect();
         match table_def.fields_ref() {
             TableFields::Relations { relation_id, changeset_id, timestamp, version, visible, redaction_id } => {
                 assert!(*relation_id < columns.len(), "column {} for field (relation_id) is missing in {}:{}", *relation_id + 1, table_def.path().display(), line_number);
@@ -302,8 +302,8 @@ impl TableReader {
         }
     }
 
-    fn create_relation_member(line: &String, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
-        let columns: Vec<&str> = line.trim_end_matches("\n").split("\t").collect();
+    fn create_relation_member(line: &str, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
+        let columns: Vec<&str> = line.trim_end_matches('\n').split('\t').collect();
         match table_def.fields_ref() {
             TableFields::RelationMembers { relation_id, member_type, member_id, member_role, version, sequence_id } => {
                 assert!(*relation_id < columns.len(), "column {} for field (relation_id) is missing in {}:{}", *relation_id + 1, table_def.path().display(), line_number);
@@ -331,8 +331,8 @@ impl TableReader {
         }
     }
 
-    fn create_relation_tag(line: &String, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
-        let columns: Vec<&str> = line.trim_end_matches("\n").split("\t").collect();
+    fn create_relation_tag(line: &str, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
+        let columns: Vec<&str> = line.trim_end_matches('\n').split('\t').collect();
         match table_def.fields_ref() {
             TableFields::RelationTags { relation_id, k, v, version } => {
                 assert!(*relation_id < columns.len(), "column {} for field (relation_id) is missing in {}:{}", *relation_id + 1, table_def.path().display(), line_number);
@@ -356,8 +356,8 @@ impl TableReader {
         }
     }
 
-    fn create_changeset(line: &String, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
-        let columns: Vec<&str> = line.trim_end_matches("\n").split("\t").collect();
+    fn create_changeset(line: &str, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
+        let columns: Vec<&str> = line.trim_end_matches('\n').split('\t').collect();
         match table_def.fields_ref() {
             TableFields::Changesets { id, user_id, created_at, min_lat, max_lat, min_lon, max_lon, closed_at, num_changes } => {
                 assert!(*id < columns.len(), "column {} for field (id) is missing in {}:{}", *id + 1, table_def.path().display(), line_number);
@@ -391,8 +391,8 @@ impl TableReader {
         }
     }
 
-    fn create_user(line: &String, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
-        let columns: Vec<&str> = line.trim_end_matches("\n").split("\t").collect();
+    fn create_user(line: &str, table_def: &TableDef, line_number: usize) -> Option<TableRecord> {
+        let columns: Vec<&str> = line.trim_end_matches('\n').split('\t').collect();
         match table_def.fields_ref() {
             TableFields::Users { email, id, pass_crypt, creation_time, display_name, data_public, description, home_lat, home_lon, home_zoom, pass_salt, email_valid, new_email, creation_ip, languages, status, terms_agreed, consider_pd, auth_uid, preferred_editor, terms_seen, description_format, changesets_count, traces_count, diary_entries_count, image_use_gravatar, auth_provider, home_tile, tou_agreed, } => {
                 assert!(*email < columns.len(), "column {} for field (email) is missing in {}:{}", *email + 1, table_def.path().display(), line_number);
@@ -486,7 +486,7 @@ impl TableIterator {
     pub(crate) fn new(table_reader: &TableReader) -> Result<TableIterator, anyhow::Error> {
         log::info!("Source data for {} is in {}", table_reader.table_def.name(), table_reader.table_def.path().display());
         log::info!("Create iterator for {} from {}", table_reader.table_def.name(), table_reader.table_def.sorted_path().display());
-        let f = File::open(&table_reader.table_def.sorted_path())?;
+        let f = File::open(table_reader.table_def.sorted_path())?;
         let reader = BufReader::new(f);
         let record_builder = table_reader.create_record_builder()?;
         Ok(
@@ -510,7 +510,7 @@ impl Iterator for TableIterator {
                 None
             }
             Ok(_l) => {
-                match line.starts_with("\\.") || line.is_empty() || line.starts_with("\n") {
+                match line.starts_with("\\.") || line.is_empty() || line.starts_with('\n') {
                     false => {
                         self.record_builder.build(&line, self.line_number)
                     }

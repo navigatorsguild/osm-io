@@ -1,5 +1,4 @@
 use std::path::PathBuf;
-use prost_build;
 
 // Generate the osmpbf module when developing the osm-io package
 // and copy the generated file when using it from other packages

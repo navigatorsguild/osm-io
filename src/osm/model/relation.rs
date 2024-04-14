@@ -49,6 +49,7 @@ pub struct Relation {
 }
 
 impl Relation {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(id: i64, version: i32, timestamp: i64, changeset: i64, uid: i32, user: String, visible: bool, members: Vec<Member>, tags: Vec<Tag>) -> Relation {
         Relation {
             id,

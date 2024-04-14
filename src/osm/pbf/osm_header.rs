@@ -11,7 +11,7 @@ pub struct OsmHeader {
     info: FileInfo,
 }
 
-const NANODEG: f64 = 1_000_000_000 as f64;
+const NANODEG: f64 = 1_000_000_000f64;
 
 impl OsmHeader {
     pub fn from_bytes(data: Vec<u8>) -> Result<OsmHeader, anyhow::Error> {
@@ -61,21 +61,12 @@ impl OsmHeader {
     }
 
     fn header_bbox(&self) -> Option<osmpbf::HeaderBBox> {
-        match &self.info.bounding_box() {
-            None => {
-                None
-            }
-            Some(bounding_box) => {
-                Some(
-                    osmpbf::HeaderBBox {
-                        left: (bounding_box.left() * NANODEG) as i64,
-                        right: (bounding_box.right() * NANODEG) as i64,
-                        top: (bounding_box.top() * NANODEG) as i64,
-                        bottom: (bounding_box.bottom() * NANODEG) as i64,
-                    }
-                )
-            }
-        }
+        self.info.bounding_box().as_ref().map(|bounding_box| osmpbf::HeaderBBox {
+            left: (bounding_box.left() * NANODEG) as i64,
+            right: (bounding_box.right() * NANODEG) as i64,
+            top: (bounding_box.top() * NANODEG) as i64,
+            bottom: (bounding_box.bottom() * NANODEG) as i64,
+        })
     }
 
     pub fn serialize(&self) -> Result<Vec<u8>, anyhow::Error> {
@@ -85,8 +76,8 @@ impl OsmHeader {
             optional_features: self.info.optional_features().clone(),
             writingprogram: self.info.writingprogram().clone(),
             source: self.info.source().clone(),
-            osmosis_replication_timestamp: self.info.osmosis_replication_timestamp().clone(),
-            osmosis_replication_sequence_number: self.info.osmosis_replication_sequence_number().clone(),
+            osmosis_replication_timestamp: *self.info.osmosis_replication_timestamp(),
+            osmosis_replication_sequence_number: *self.info.osmosis_replication_sequence_number(),
             osmosis_replication_base_url: self.info.osmosis_replication_base_url().clone(),
         };
 

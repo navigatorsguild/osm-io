@@ -10,6 +10,7 @@ use crate::osm::apidb_dump::read::way_record::WayRecord;
 use crate::osm::apidb_dump::read::way_tag_record::WayTagRecord;
 
 #[derive(Debug)]
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum TableRecord {
     Node {
         node_record: NodeRecord,

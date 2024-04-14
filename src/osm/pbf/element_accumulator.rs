@@ -15,7 +15,7 @@ pub(crate) struct ElementAccumulator {
 
 impl ElementAccumulator {
     pub(crate) fn new() -> ElementAccumulator {
-        let block_size = 8000 as usize;
+        let block_size = 8000usize;
         ElementAccumulator {
             block_size,
             elements: Vec::with_capacity(block_size),
@@ -43,7 +43,7 @@ impl ElementAccumulator {
                         self.add(element);
                     }
                     Element::Relation { .. } => {
-                        assert!(false, "expected Element::Node or Element::Way but got Element::Relation");
+                        panic!("expected Element::Node or Element::Way but got Element::Relation");
                     }
                     Element::Sentinel => {}
                 }
@@ -51,7 +51,7 @@ impl ElementAccumulator {
             State::Ways => {
                 match &element {
                     Element::Node { .. } => {
-                        assert!(false, "expected Element::Way or Element::Relation but got Element::Node");
+                        panic!("expected Element::Way or Element::Relation but got Element::Node");
                     }
                     Element::Way { .. } => {
                         self.elements.push(element);
@@ -72,10 +72,10 @@ impl ElementAccumulator {
             State::Relations => {
                 match &element {
                     Element::Node { .. } => {
-                        assert!(false, "expected Element::Relation but got Element::Node");
+                        panic!("expected Element::Relation but got Element::Node");
                     }
                     Element::Way { .. } => {
-                        assert!(false, "expected Element::Relation but got Element::Way");
+                        panic!("expected Element::Relation but got Element::Way");
                     }
                     Element::Relation { .. } => {
                         self.elements.push(element);

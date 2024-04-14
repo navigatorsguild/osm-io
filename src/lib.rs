@@ -103,6 +103,7 @@
 //!
 extern crate core;
 
+#[allow(clippy::enum_variant_names)]
 pub(crate) mod osmpbf {
     include!(concat!(env!("OUT_DIR"), "/osmpbf.rs"));
 }

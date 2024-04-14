@@ -14,6 +14,7 @@ pub struct Way {
 }
 
 impl Way {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(id: i64, version: i32, timestamp: i64, changeset: i64, uid: i32, user: String, visible: bool, refs: Vec<i64>, tags: Vec<Tag>) -> Way {
         Way {
             id,

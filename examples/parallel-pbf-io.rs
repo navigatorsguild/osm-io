@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-use anyhow;
 use benchmark_rs::stopwatch::StopWatch;
 use simple_logger::SimpleLogger;
 

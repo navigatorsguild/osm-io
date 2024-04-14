@@ -17,6 +17,7 @@ pub(crate) struct DenseGroupBuilder {
     last_sid: i32,
 }
 
+#[allow(clippy::needless_late_init)]
 impl DenseGroupBuilder {
     pub(crate) fn new(
         granularity: i32,
@@ -38,9 +39,9 @@ impl DenseGroupBuilder {
         last_id = node.id();
         dense.as_mut().unwrap().id.push(last_id);
 
-        last_lon = (node.coordinate().lon() * 1E9 as f64 / granularity as f64 - lon_offset as f64).round() as i64;
+        last_lon = (node.coordinate().lon() * 1E9f64 / granularity as f64 - lon_offset as f64).round() as i64;
         dense.as_mut().unwrap().lon.push(last_lon);
-        last_lat = (node.coordinate().lat() * 1E9 as f64 / granularity as f64 - lat_offset as f64).round() as i64;
+        last_lat = (node.coordinate().lat() * 1E9f64 / granularity as f64 - lat_offset as f64).round() as i64;
         dense.as_mut().unwrap().lat.push(last_lat);
 
         dense.as_mut().unwrap().denseinfo = Some(DenseInfo::default());
@@ -89,10 +90,10 @@ impl DenseGroupBuilder {
         self.dense.as_mut().unwrap().id.push(current_id - self.last_id);
         self.last_id = current_id;
 
-        let current_lon = (node.coordinate().lon() * 1E9 as f64 / self.granularity as f64 - self.lon_offset as f64).round() as i64;
+        let current_lon = (node.coordinate().lon() * 1E9f64 / self.granularity as f64 - self.lon_offset as f64).round() as i64;
         self.dense.as_mut().unwrap().lon.push(current_lon - self.last_lon);
         self.last_lon = current_lon;
-        let current_lat = (node.coordinate().lat() * 1E9 as f64 / self.granularity as f64 - self.lat_offset as f64).round() as i64;
+        let current_lat = (node.coordinate().lat() * 1E9f64 / self.granularity as f64 - self.lat_offset as f64).round() as i64;
         self.dense.as_mut().unwrap().lat.push(current_lat - self.last_lat);
         self.last_lat = current_lat;
 
@@ -125,6 +126,7 @@ impl DenseGroupBuilder {
         self.dense.as_mut().unwrap().keys_vals.push(0);
     }
 
+    #[allow(clippy::field_reassign_with_default)]
     pub(crate) fn build(&mut self) -> PrimitiveGroup {
         let mut primitive_group = PrimitiveGroup::default();
         primitive_group.dense = self.dense.replace(DenseNodes::default());

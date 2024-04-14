@@ -64,7 +64,7 @@ impl Iterator for NodeRelationsIterator {
                 if let Some(node_tag_record) = self.next_node_tag_record.take() {
                     if node_tag_record.node_id() == node_record.node_id() && node_tag_record.version() == node_record.version() {
                         current_node_tags.push(node_tag_record);
-                        while let Some(node_tag) = self.node_tags_iterator.next() {
+                        for node_tag in self.node_tags_iterator.by_ref() {
                             if let TableRecord::NodeTag { node_tag_record } = node_tag {
                                 if node_tag_record.node_id() == node_record.node_id() && node_tag_record.version() == node_record.version() {
                                     current_node_tags.push(node_tag_record)

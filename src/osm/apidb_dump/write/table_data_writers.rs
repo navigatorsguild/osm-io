@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::Path;
 
 use json::JsonValue;
 use transient_btree_index::{BtreeConfig, BtreeIndex};
@@ -69,7 +69,7 @@ pub(crate) struct TableDataWriters {
 }
 
 impl TableDataWriters {
-    pub(crate) fn new(template_mapping: JsonValue, output_path: &PathBuf) -> Result<Self, anyhow::Error> {
+    pub(crate) fn new(template_mapping: JsonValue, output_path: &Path) -> Result<Self, anyhow::Error> {
         let user_index = BtreeIndex::<i64, String>::with_capacity(BtreeConfig::default(), 0)?;
         let changeset_user_index = BtreeIndex::<i64, i64>::with_capacity(BtreeConfig::default(), 0)?;
         let user_index_buffer = HashMap::<i64, String>::new();

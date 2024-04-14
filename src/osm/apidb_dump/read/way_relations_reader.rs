@@ -79,7 +79,7 @@ impl Iterator for WayRelationsIterator {
                 if let Some(way_tag_record) = self.next_way_tag_record.take() {
                     if way_tag_record.way_id() == way_record.way_id() && way_tag_record.version() == way_record.version() {
                         current_way_tags.push(way_tag_record);
-                        while let Some(way_tag) = self.way_tags_iterator.next() {
+                        for way_tag in self.way_tags_iterator.by_ref() {
                             if let TableRecord::WayTag { way_tag_record } = way_tag {
                                 if way_tag_record.way_id() == way_record.way_id() && way_tag_record.version() == way_record.version() {
                                     current_way_tags.push(way_tag_record)
@@ -113,7 +113,7 @@ impl Iterator for WayRelationsIterator {
                 if let Some(way_node_record) = self.next_way_node_record.take() {
                     if way_node_record.way_id() == way_record.way_id() && way_node_record.version() == way_record.version() {
                         current_way_nodes.push(way_node_record);
-                        while let Some(way_node) = self.way_nodes_iterator.next() {
+                        for way_node in self.way_nodes_iterator.by_ref() {
                             if let TableRecord::WayNode { way_node_record } = way_node {
                                 if way_node_record.way_id() == way_record.way_id() && way_node_record.version() == way_record.version() {
                                     current_way_nodes.push(way_node_record)

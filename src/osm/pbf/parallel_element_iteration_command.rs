@@ -9,11 +9,11 @@ use crate::osm::pbf::file_block::FileBlock;
 
 pub(crate) struct ParallelElementIterationCommand {
     blob_desc: BlobDesc,
-    f: Arc<dyn Fn(Element) -> Result<(), anyhow::Error> + Send + Sync + 'static>,
+    f: Arc<dyn Fn(Element) -> Result<(), Error> + Send + Sync + 'static>,
 }
 
 impl ParallelElementIterationCommand {
-    pub(crate) fn new(blob_desc: BlobDesc, f: Arc<impl Fn(Element) -> Result<(), anyhow::Error> + Send + Sync + 'static>) -> ParallelElementIterationCommand {
+    pub(crate) fn new(blob_desc: BlobDesc, f: Arc<impl Fn(Element) -> Result<(), Error> + Send + Sync + 'static>) -> ParallelElementIterationCommand {
         ParallelElementIterationCommand {
             blob_desc,
             f,

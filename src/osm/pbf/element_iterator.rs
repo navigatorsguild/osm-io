@@ -21,6 +21,7 @@ impl ElementIterator {
         }
     }
 
+    #[allow(clippy::collapsible_match)]
     fn create_element_iterator(file_block_iterator: &mut FileBlockIterator) -> Option<IntoIter<Element>> {
         if let Some(current_block) = file_block_iterator.next() {
             if let FileBlock::Data { metadata: _, mut data } = current_block {

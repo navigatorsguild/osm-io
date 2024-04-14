@@ -7,7 +7,7 @@ use flate2::Compression;
 use flate2::write::ZlibEncoder;
 use prost::Message;
 
-use crate::{osm, osmpbf};
+use crate::osmpbf;
 use crate::osm::model::bounding_box::BoundingBox;
 use crate::osm::model::element::Element;
 use crate::osm::pbf::blob_desc::BlobDesc;
@@ -156,7 +156,7 @@ impl FileBlock {
         }
     }
 
-    pub(crate) fn from_blob_desc(blob_desc: &osm::pbf::blob_desc::BlobDesc) -> Result<FileBlock, anyhow::Error> {
+    pub(crate) fn from_blob_desc(blob_desc: &BlobDesc) -> Result<FileBlock, anyhow::Error> {
         let mut file = File::open(blob_desc.path()).with_context(
             || anyhow!("Failed to open {:?} for reading", blob_desc.path())
         )?;
@@ -182,15 +182,15 @@ impl FileBlock {
 
         let mut raw_size = None;
         let mut data = None;
-        if block_data.len() != 0 {
+        if !block_data.is_empty() {
             raw_size = Some(block_data.len() as i32);
             data = match compression {
                 CompressionType::Uncompressed => {
-                    Some(osmpbf::blob::Data::Raw(block_data))
+                    Some(Data::Raw(block_data))
                 }
                 CompressionType::Zlib => {
                     let encoded = Self::zlib_encode(block_data, compression_level)?;
-                    Some(osmpbf::blob::Data::ZlibData(encoded))
+                    Some(Data::ZlibData(encoded))
                 }
             };
         }

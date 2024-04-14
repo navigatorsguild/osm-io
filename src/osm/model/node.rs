@@ -15,6 +15,7 @@ pub struct Node {
 }
 
 impl Node {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(id: i64, version: i32, coordinate: Coordinate, timestamp: i64, changeset: i64, uid: i32, user: String, visible: bool, tags: Vec<Tag>) -> Node {
         Node {
             id,
@@ -62,7 +63,7 @@ impl Node {
     }
 
     pub fn visible(&self) -> bool {
-        self.visible.clone()
+        self.visible
     }
 
     pub fn tags(&self) -> &Vec<Tag> {

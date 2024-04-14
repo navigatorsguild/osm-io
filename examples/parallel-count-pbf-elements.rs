@@ -2,7 +2,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use anyhow;
 use benchmark_rs::stopwatch::StopWatch;
 use simple_logger::SimpleLogger;
 

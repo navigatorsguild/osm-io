@@ -20,25 +20,26 @@ use crate::osm::pbf::file_info::FileInfo;
 use crate::osm::pbf::writer::Writer;
 
 thread_local! {
-    static ELEMENT_ORDERING_BUFFER: RefCell<VecDeque<Element>> = RefCell::new(VecDeque::new());
-    static ELEMENT_ORDERING_BUFFER_SIZE: RefCell<usize> = RefCell::new(0);
-    static FILE_BLOCK_SIZE: RefCell<usize> = RefCell::new(0);
-    static FILE_BLOCK_INDEX: RefCell<usize> = RefCell::new(1);
-    static NEXT_THREAD_POOL: RefCell<Option<Arc<RwLock<ThreadPool>>>> = RefCell::new(None);
-    static COMPRESSION_TYPE: RefCell<Option<CompressionType>> = RefCell::new(None);
-    static CURRENT_MIN_ELEMENT: RefCell<Option<Element>> = RefCell::new(None);
+    static ELEMENT_ORDERING_BUFFER: RefCell<VecDeque<Element>> = const { RefCell::new(VecDeque::new()) };
+    static ELEMENT_ORDERING_BUFFER_SIZE: RefCell<usize> = const { RefCell::new(0) };
+    static FILE_BLOCK_SIZE: RefCell<usize> = const { RefCell::new(0) };
+    static FILE_BLOCK_INDEX: RefCell<usize> = const { RefCell::new(1) };
+    static NEXT_THREAD_POOL: RefCell<Option<Arc<RwLock<ThreadPool>>>> = const { RefCell::new(None) };
+    static COMPRESSION_TYPE: RefCell<Option<CompressionType>> = const { RefCell::new(None) };
+    static CURRENT_MIN_ELEMENT: RefCell<Option<Element>> = const { RefCell::new(None) };
 
+    #[allow(clippy::type_complexity)]
     pub static BLOB_ORDERING_BUFFER: RefCell<HashMap<usize, (Vec<u8>, Vec<u8>)>> = RefCell::new(HashMap::new());
     // the first expected block is #1. #0 is the header
-    pub static NEXT_TO_WRITE: RefCell<usize> = RefCell::new(1);
-    pub static PBF_WRITER: RefCell<Option<Writer>> = RefCell::new(None);
+    pub static NEXT_TO_WRITE: RefCell<usize> = const { RefCell::new(1) };
+    pub static PBF_WRITER: RefCell<Option<Writer>> = const { RefCell::new(None) };
 }
 
 fn flush_sorted_top() {
     ELEMENT_ORDERING_BUFFER.with(|element_ordering_buffer| {
         element_ordering_buffer.borrow_mut().make_contiguous().sort();
         let elements = split_file_block(element_ordering_buffer);
-        set_current_min_element(elements.get(0));
+        set_current_min_element(elements.first());
         NEXT_THREAD_POOL.with(|thread_pool| {
             let thread_pool = thread_pool.borrow();
             let thread_pool_guard = thread_pool.as_ref().unwrap().read().unwrap();
@@ -53,7 +54,7 @@ fn flush_all_sorted() {
         element_ordering_buffer.borrow_mut().make_contiguous().sort();
         while element_ordering_buffer.borrow().len() > 0 {
             let elements = split_file_block(element_ordering_buffer);
-            set_current_min_element(elements.get(0));
+            set_current_min_element(elements.first());
             NEXT_THREAD_POOL.with(|thread_pool| {
                 let thread_pool = thread_pool.borrow();
                 let thread_pool_guard = thread_pool.as_ref().unwrap().read().unwrap();
@@ -73,9 +74,7 @@ fn split_file_block(element_ordering_buffer: &RefCell<VecDeque<Element>>) -> Vec
                 break;
             }
             Some(e) => {
-                if elements.is_empty() {
-                    elements.push(e);
-                } else if Element::same_type(&e, &elements[0]) {
+                if elements.is_empty() || Element::same_type(&e, &elements[0]) {
                     elements.push(e);
                 } else {
                     element_ordering_buffer.borrow_mut().push_front(e);
@@ -110,7 +109,7 @@ fn compression_type() -> CompressionType {
 fn assert_order(element: &Element) {
     if !element.is_sentinel() {
         assert!(
-            compare_to_current_min_element(&element).is_ge(),
+            compare_to_current_min_element(element).is_ge(),
             "Element order, required by OSM PBF definition is lost. \
                     Possible cause is that the length of the ordering buffer ({}) is too short \
                     to for compensate for the loss of order caused by concurrent processing. \
@@ -318,7 +317,7 @@ impl ParallelWriter {
         path: PathBuf,
         file_info: FileInfo,
         compression_type: CompressionType,
-    ) -> Result<ParallelWriter, anyhow::Error> {
+    ) -> Result<ParallelWriter, Error> {
         let element_ordering_pool = Self::create_thread_pool("element-ordering", 1, 256)?;
         let encoding_pool = Self::create_thread_pool("encoding", 4, 256)?;
         let writing_pool = Self::create_thread_pool("writing", 1, 256)?;
@@ -344,7 +343,7 @@ impl ParallelWriter {
     /// Write the *.osm.pbf header.
     ///
     /// Must be called before writing the first element.
-    pub fn write_header(&mut self) -> Result<(), anyhow::Error> {
+    pub fn write_header(&mut self) -> Result<(), Error> {
         let writing_pool_guard = self.writing_pool.read()
             .map_err(|e| anyhow!("{}", e))?;
         let path = self.path.clone();
@@ -369,7 +368,7 @@ impl ParallelWriter {
     }
 
     /// Write an [Element]
-    pub fn write_element(&mut self, element: Element) -> Result<(), anyhow::Error> {
+    pub fn write_element(&mut self, element: Element) -> Result<(), Error> {
         self.element_ordering_pool
             .read()
             .unwrap()
@@ -378,7 +377,7 @@ impl ParallelWriter {
     }
 
     /// Write list of [Element]s
-    pub fn write_elements(&mut self, elements: Vec<Element>) -> Result<(), anyhow::Error> {
+    pub fn write_elements(&mut self, elements: Vec<Element>) -> Result<(), Error> {
         self.element_ordering_pool
             .read()
             .unwrap()
@@ -387,7 +386,7 @@ impl ParallelWriter {
     }
 
     /// Flush internal buffers.
-    pub fn close(&mut self) -> Result<(), anyhow::Error> {
+    pub fn close(&mut self) -> Result<(), Error> {
         self.flush_element_ordering();
         Self::shutdown(self.element_ordering_pool.clone())?;
         Self::shutdown(self.encoding_pool.clone())?;
@@ -398,12 +397,12 @@ impl ParallelWriter {
 
     fn flush_element_ordering(&self) {
         let element_ordering_pool_guard = self.element_ordering_pool.read().unwrap();
-        element_ordering_pool_guard.in_all_threads(Arc::new(|| flush_all_sorted()))
+        element_ordering_pool_guard.in_all_threads(Arc::new(flush_all_sorted))
     }
 
     fn flush_writing(&self) {}
 
-    fn create_thread_pool(name: &str, tasks: usize, queue_size: usize) -> Result<Arc<RwLock<ThreadPool>>, anyhow::Error> {
+    fn create_thread_pool(name: &str, tasks: usize, queue_size: usize) -> Result<Arc<RwLock<ThreadPool>>, Error> {
         Ok(
             Arc::new(
                 RwLock::new(
@@ -426,7 +425,7 @@ impl ParallelWriter {
             .set_thread_local(local_key, val);
     }
 
-    fn shutdown(thread_pool: Arc<RwLock<ThreadPool>>) -> Result<(), anyhow::Error> {
+    fn shutdown(thread_pool: Arc<RwLock<ThreadPool>>) -> Result<(), Error> {
         let mut thread_pool = thread_pool
             .write()
             .map_err(|e| anyhow!("failed to lock tread pool: {e}"))?;

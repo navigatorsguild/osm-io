@@ -22,6 +22,7 @@ impl FileInfo {
     /// let file_info = FileInfo::default()
     ///     .with_writingprogram_str("example-osm-pbf-writer");
     /// ```
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         bounding_box: Option<BoundingBox>,
         required_features: Vec<String>,
@@ -48,10 +49,8 @@ impl FileInfo {
     pub(crate) fn merge_bounding_box(&mut self, bounding_box: Option<BoundingBox>) {
         if self.bounding_box.is_none() {
             self.bounding_box = bounding_box;
-        } else {
-            if bounding_box.is_some() {
-                self.bounding_box.as_mut().unwrap().merge_bounding_box(bounding_box.as_ref().unwrap());
-            }
+        } else if bounding_box.is_some() {
+            self.bounding_box.as_mut().unwrap().merge_bounding_box(bounding_box.as_ref().unwrap());
         }
     }
 
@@ -71,8 +70,8 @@ impl FileInfo {
     }
 
     /// Set required features for this file
-    pub fn with_required_features(&mut self, required_features: &Vec<String>) {
-        self.required_features = required_features.clone();
+    pub fn with_required_features(&mut self, required_features: &[String]) {
+        self.required_features = required_features.to_vec();
     }
 
     /// Get optional features for this file
@@ -81,8 +80,8 @@ impl FileInfo {
     }
 
     /// Set optional features for this file
-    pub fn with_optional_features(&mut self, optional_features: &Vec<String>) {
-        self.optional_features = optional_features.clone();
+    pub fn with_optional_features(&mut self, optional_features: &[String]) {
+        self.optional_features = optional_features.to_vec();
     }
 
     /// Get writing program set for this file
@@ -117,7 +116,7 @@ impl FileInfo {
 
     /// Set the osmosis_replication_timestamp for this file
     pub fn with_osmosis_replication_timestamp(&mut self, osmosis_replication_timestamp: &Option<i64>) {
-        self.osmosis_replication_timestamp = osmosis_replication_timestamp.clone();
+        self.osmosis_replication_timestamp = *osmosis_replication_timestamp;
     }
 
     /// Get osmosis_replication_sequence_number set for this file
@@ -127,7 +126,7 @@ impl FileInfo {
 
     /// Set osmosis_replication_sequence_number for this file
     pub fn with_osmosis_replication_sequence_number(&mut self, osmosis_replication_sequence_number: &Option<i64>) {
-        self.osmosis_replication_sequence_number = osmosis_replication_sequence_number.clone();
+        self.osmosis_replication_sequence_number = *osmosis_replication_sequence_number;
     }
 
     /// Get osmosis_replication_base_url set for this file

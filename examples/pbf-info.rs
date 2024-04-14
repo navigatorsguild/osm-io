@@ -1,11 +1,9 @@
 use std::path::PathBuf;
 
-use anyhow;
-
 use osm_io::osm;
 use osm_io::osm::pbf;
 
-/// Display PBF file informationn
+/// Display PBF file information
 pub fn main() -> Result<(), anyhow::Error> {
     let input_path = PathBuf::from("./tests/fixtures/history-niue-230109.osm.pbf");
     let reader = pbf::reader::Reader::new(&input_path)?;
@@ -47,7 +45,10 @@ pub fn main() -> Result<(), anyhow::Error> {
     match info.osmosis_replication_timestamp() {
         None => {}
         Some(t) => {
-            println!("osmosis_replication_timestamp: {}", osm::converters::timestamp_to_iso8601_seconds(t * 1e6 as i64))
+            println!(
+                "osmosis_replication_timestamp: {}",
+                osm::converters::timestamp_to_iso8601_seconds(t * 1e6 as i64)?
+            )
         }
     }
 
