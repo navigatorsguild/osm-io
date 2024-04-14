@@ -20,26 +20,26 @@ use crate::osm::pbf::file_info::FileInfo;
 use crate::osm::pbf::writer::Writer;
 
 thread_local! {
-    static ELEMENT_ORDERING_BUFFER: RefCell<VecDeque<Element>> = RefCell::new(VecDeque::new());
-    static ELEMENT_ORDERING_BUFFER_SIZE: RefCell<usize> = RefCell::new(0);
-    static FILE_BLOCK_SIZE: RefCell<usize> = RefCell::new(0);
-    static FILE_BLOCK_INDEX: RefCell<usize> = RefCell::new(1);
-    static NEXT_THREAD_POOL: RefCell<Option<Arc<RwLock<ThreadPool>>>> = RefCell::new(None);
-    static COMPRESSION_TYPE: RefCell<Option<CompressionType>> = RefCell::new(None);
-    static CURRENT_MIN_ELEMENT: RefCell<Option<Element>> = RefCell::new(None);
+    static ELEMENT_ORDERING_BUFFER: RefCell<VecDeque<Element>> = const { RefCell::new(VecDeque::new()) };
+    static ELEMENT_ORDERING_BUFFER_SIZE: RefCell<usize> = const { RefCell::new(0) };
+    static FILE_BLOCK_SIZE: RefCell<usize> = const { RefCell::new(0) };
+    static FILE_BLOCK_INDEX: RefCell<usize> = const { RefCell::new(1) };
+    static NEXT_THREAD_POOL: RefCell<Option<Arc<RwLock<ThreadPool>>>> = const { RefCell::new(None) };
+    static COMPRESSION_TYPE: RefCell<Option<CompressionType>> = const { RefCell::new(None) };
+    static CURRENT_MIN_ELEMENT: RefCell<Option<Element>> = const { RefCell::new(None) };
 
     #[allow(clippy::type_complexity)]
     pub static BLOB_ORDERING_BUFFER: RefCell<HashMap<usize, (Vec<u8>, Vec<u8>)>> = RefCell::new(HashMap::new());
     // the first expected block is #1. #0 is the header
-    pub static NEXT_TO_WRITE: RefCell<usize> = RefCell::new(1);
-    pub static PBF_WRITER: RefCell<Option<Writer>> = RefCell::new(None);
+    pub static NEXT_TO_WRITE: RefCell<usize> = const { RefCell::new(1) };
+    pub static PBF_WRITER: RefCell<Option<Writer>> = const { RefCell::new(None) };
 }
 
 fn flush_sorted_top() {
     ELEMENT_ORDERING_BUFFER.with(|element_ordering_buffer| {
         element_ordering_buffer.borrow_mut().make_contiguous().sort();
         let elements = split_file_block(element_ordering_buffer);
-        set_current_min_element(elements.get(0));
+        set_current_min_element(elements.first());
         NEXT_THREAD_POOL.with(|thread_pool| {
             let thread_pool = thread_pool.borrow();
             let thread_pool_guard = thread_pool.as_ref().unwrap().read().unwrap();
@@ -54,7 +54,7 @@ fn flush_all_sorted() {
         element_ordering_buffer.borrow_mut().make_contiguous().sort();
         while element_ordering_buffer.borrow().len() > 0 {
             let elements = split_file_block(element_ordering_buffer);
-            set_current_min_element(elements.get(0));
+            set_current_min_element(elements.first());
             NEXT_THREAD_POOL.with(|thread_pool| {
                 let thread_pool = thread_pool.borrow();
                 let thread_pool_guard = thread_pool.as_ref().unwrap().read().unwrap();

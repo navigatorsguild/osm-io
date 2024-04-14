@@ -84,7 +84,7 @@ impl Reader {
         Ok(())
     }
 
-    fn get_table_def_strings(toc: &Vec<u8>) -> Vec<(String, String)> {
+    fn get_table_def_strings(toc: &[u8]) -> Vec<(String, String)> {
         // COPY public.node_tags (node_id, version, k, v) FROM stdin;......3838.dat
         let mut result: Vec<(String, String)> = Vec::new();
         let copy = "COPY ".as_bytes();

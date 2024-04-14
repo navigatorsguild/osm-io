@@ -58,6 +58,7 @@ impl OsmData {
         }
     }
 
+    #[allow(clippy::unnecessary_unwrap)]
     pub fn recompute_bounding_box(&self) -> Option<BoundingBox> {
         let mut result = None;
         for element in &self.elements {
@@ -306,8 +307,8 @@ impl OsmData {
         }
     }
 
-    fn read_changesets(changeset_group: &Vec<osmpbf::ChangeSet>, _string_table: &[String], _granularity: i64, _date_granularity: i32, _lat_offset: i64, _lon_offset: i64, _elements: &mut [Element]) {
-        for _changeset in changeset_group {
+    fn read_changesets(changeset_group: &[osmpbf::ChangeSet], _string_table: &[String], _granularity: i64, _date_granularity: i32, _lat_offset: i64, _lon_offset: i64, _elements: &mut [Element]) {
+        if let Some(_changeset) = changeset_group.iter().next() {
             panic!("According to documentation changesets are not used");
         }
     }

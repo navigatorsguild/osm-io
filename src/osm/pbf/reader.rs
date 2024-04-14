@@ -205,7 +205,7 @@ impl Reader {
     fn find_missing_features(supported_features: &[String], required_features: &[String]) -> Vec<String> {
         let supported: HashSet<&String> = supported_features.iter().collect::<HashSet<&String>>();
         let required: HashSet<&String> = required_features.iter().collect::<HashSet<&String>>();
-        if let true = required.is_subset(&supported) {
+        if required.is_subset(&supported) {
             vec![]
         } else {
             required.difference(&supported)

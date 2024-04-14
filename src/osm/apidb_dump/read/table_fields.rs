@@ -118,8 +118,7 @@ impl TableFields {
     }
 
     pub(crate) fn is_of_interest(name: &str) -> bool {
-        let tables_of_interest = vec![
-            "public.nodes",
+        let tables_of_interest = ["public.nodes",
             "public.node_tags",
             "public.ways",
             "public.way_nodes",
@@ -128,8 +127,7 @@ impl TableFields {
             "public.relation_members",
             "public.relation_tags",
             "public.changesets",
-            "public.users",
-        ];
+            "public.users"];
 
         tables_of_interest.contains(&name)
     }
