@@ -20,14 +20,14 @@ impl Reader {
     /// Create a new [Reader]
     ///
     /// * input_path - a path to directory that contains apidb schema dump produced by pg_dump with
-    /// directory format. For example:
+    ///   directory format. For example:
     /// ```bash
     ///  pg_dump --host localhost --port 5432 --username openstreetmap --no-password --file /result --format d -d openstreetmap --compress 0 --table public.nodes --table public.node_tags --table public.ways --table public.way_nodes --table public.way_tags --table public.relations --table public.relation_members --table public.relation_tags --table public.changesets --table public.users
     /// ```
-    /// The input is sorted using primary keys for each table found in input_path/toc.dat which may
-    /// take significant time depending on the size of the input
+    ///   The input is sorted using primary keys for each table found in input_path/toc.dat which may
+    ///   take significant time depending on the size of the input
     /// * tmp_path - location used by the sorting algorithm for intermediate and final result. Should
-    /// have space for at least 2.2 * input size
+    ///   have space for at least 2.2 * input size
     pub fn new(input_path: PathBuf, tmp_path: PathBuf) -> Result<Reader, anyhow::Error> {
         let mut tables: HashMap<String, TableDef> = HashMap::new();
 
@@ -69,6 +69,7 @@ impl Reader {
     }
 
     fn sort_tables(tables: &HashMap<String, TableDef>) -> Result<(), anyhow::Error> {
+        let ignore_regex = Regex::new("^\\\\\\.$")?;
         for (table_name, table_def) in tables {
             log::info!("Sort {} table data", table_name);
             fs::create_dir_all(table_def.tmp_path())?;
@@ -78,7 +79,7 @@ impl Reader {
             text_file.with_tasks(num_cpus::get());
             text_file.with_fields(table_def.pkey().key());
             text_file.with_ignore_empty();
-            text_file.with_ignore_lines(Regex::new("^\\\\\\.$")?);
+            text_file.with_ignore_lines(ignore_regex.clone());
             text_file.sort()?;
         }
         Ok(())

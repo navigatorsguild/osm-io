@@ -37,8 +37,8 @@ impl Writer {
     /// Create a new [Writer]
     ///
     /// * output_path - directory to write the output to. Must contain enough space which is very
-    /// difficult to calculate because the *.osm.pbf input is so condensed that 1GB of input can
-    /// easily transform into 100GB of output.
+    ///   difficult to calculate because the *.osm.pbf input is so condensed that 1GB of input can
+    ///   easily transform into 100GB of output.
     pub fn new(output_path: PathBuf, compression_level: i8) -> Result<Writer, Error> {
         Self::create_result_dir(&output_path)?;
         let writers = TableDataWriters::new(load_template_mapping()?, &output_path)?;

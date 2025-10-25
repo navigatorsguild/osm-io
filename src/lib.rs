@@ -8,10 +8,10 @@
 //! store and transmit it.
 //! Our main focus here are the following formats:
 //! * [apidb](https://wiki.openstreetmap.org/wiki/Openstreetmap-website/Database_schema) - database
-//! schema backing [OSM](https://www.openstreetmap.org/) website
+//!   schema backing [OSM](https://www.openstreetmap.org/) website
 //! * [*.osm.pbf](https://wiki.openstreetmap.org/wiki/PBF_Format) - a very efficient data format
-//! used to transmit OSM data that can be downloaded from http://download.geofabrik.de/ or from
-//! https://planet.openstreetmap.org/pbf/.
+//!   used to transmit OSM data that can be downloaded from http://download.geofabrik.de/ or from
+//!   https://planet.openstreetmap.org/pbf/.
 //!
 //! The goal at this stage is to be able to load large *.osm.pbf files, such as planet.osm.pbf into a
 //! Postgresql OSM database (apidb schema) and to dump an entire Postgres OSM database into a
@@ -27,9 +27,9 @@
 //! * provide basic filtering (see example below) - Done
 //! * convert between *.osm.pbf and apidb and vice versa - Done see examples.
 //! * [S2](http://s2geometry.io/) indexing - index the entire OSM dataset by S2 cells for farther
-//! processing
+//!   processing
 //! * context indexing - index the entire OSM dataset by relations between its objects. So, for
-//! example, it would be possible to efficiently discard all Nodes that belong to a deleted Way.
+//!   example, it would be possible to efficiently discard all Nodes that belong to a deleted Way.
 //!
 //! # Issues
 //! Issues are welcome and appreciated. Please submit to https://github.com/navigatorsguild/osm-io/issues
@@ -98,7 +98,7 @@
 //! # Similar Software
 //! * [libosmium](https://osmcode.org/libosmium/) - very fast and very mature with a Python wrapper.
 //! * [osmosis](https://wiki.openstreetmap.org/wiki/Osmosis) - reference implementation for most if
-//! not all features.
+//!   not all features.
 //! * [osmpbf](https://crates.io/crates/osmpbf) - very efficient *.osm.pbf reader written in Rust
 //!
 extern crate core;

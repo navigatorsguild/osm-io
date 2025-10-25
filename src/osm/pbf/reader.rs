@@ -28,7 +28,8 @@ impl Reader {
     /// Create a new Reader
     ///
     /// * path - a path to a valid *.osm.pbf file
-    /// Example:
+    ///
+    ///   Example:
     /// ```
     /// use std::path::PathBuf;
     /// use osm_io::osm::pbf::reader::Reader;

@@ -52,7 +52,7 @@ fn flush_sorted_top() {
 fn flush_all_sorted() {
     ELEMENT_ORDERING_BUFFER.with(|element_ordering_buffer| {
         element_ordering_buffer.borrow_mut().make_contiguous().sort();
-        while element_ordering_buffer.borrow().len() > 0 {
+        while !element_ordering_buffer.borrow().is_empty() {
             let elements = split_file_block(element_ordering_buffer);
             set_current_min_element(elements.first());
             NEXT_THREAD_POOL.with(|thread_pool| {
