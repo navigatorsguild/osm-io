@@ -13,9 +13,7 @@ pub fn setup() {
     let results_dir_path = PathBuf::from_str("./target/results/").unwrap();
 
     if !results_dir_path.exists() {
-        fs::create_dir_all(&results_dir_path).expect(
-            format!("Failed to create results directory: {:?}", results_dir_path).as_str()
-        );
+        fs::create_dir_all(&results_dir_path).unwrap_or_else(|_| panic!("Failed to create results directory: {:?}", results_dir_path));
     } else {
         println!("Results directory exists at {:?}", results_dir_path);
     }

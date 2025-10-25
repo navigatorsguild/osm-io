@@ -44,7 +44,7 @@ fn test_pbf_reader() -> Result<(), anyhow::Error> {
     let mut nodes = 0_i64;
     let mut ways = 0_i64;
     let mut relations = 0_i64;
-    for (_i, element) in reader.elements()?.enumerate() {
+    for element in reader.elements()? {
         match element {
             Element::Node { node: _ } => {
                 nodes.add_assign(1);

@@ -18,7 +18,7 @@ impl CurrentObjectLine {
     pub(crate) fn set_last_line(&mut self, line: String, id: i64, visible: bool) -> Option<String> {
         let line_opt =
             if visible {
-                std::mem::replace(&mut self.last_line, Some(line))
+                self.last_line.replace(line)
             } else {
                 std::mem::take(&mut self.last_line)
             };
@@ -55,7 +55,7 @@ impl CurrentObjectLines {
     pub(crate) fn set_last_lines(&mut self, lines: Vec<String>, id: i64, visible: bool) -> Option<Vec<String>> {
         let lines_opt =
             if visible {
-                std::mem::replace(&mut self.last_lines, Some(lines))
+                self.last_lines.replace(lines)
             } else {
                 std::mem::take(&mut self.last_lines)
             };
