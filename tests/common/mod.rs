@@ -19,6 +19,7 @@ pub fn setup() {
     }
 }
 
+#[allow(dead_code)]
 pub fn read_fixture_analysis(path: &PathBuf) -> JsonValue {
     let fixture_analysis_string = fs::read_to_string(path)
         .with_context(|| format!("path: {}", path.to_string_lossy()))
@@ -28,6 +29,7 @@ pub fn read_fixture_analysis(path: &PathBuf) -> JsonValue {
     fixture_analysis
 }
 
+#[allow(dead_code)]
 pub fn analyze_pbf_output(output_path: PathBuf, fixture_analysis_path: PathBuf) {
     let fixture_analysis = read_fixture_analysis(&fixture_analysis_path);
     let test_reader = Reader::new(&output_path).unwrap();

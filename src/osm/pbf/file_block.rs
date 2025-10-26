@@ -119,11 +119,9 @@ impl FileBlock {
             }
             Some(data) => {
                 match data {
-                    Data::Raw(_) => {
-                        Err(
-                            // TODO:
-                            anyhow!("Raw data type not implemented")
-                        )
+                    Data::Raw(raw_data) => {
+                        // Uncompressed data - return as-is
+                        Ok(raw_data)
                     }
                     Data::ZlibData(zlib_data) => {
                         // for now ignore that the uncompressed size is optional
