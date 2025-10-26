@@ -11,6 +11,10 @@ categories = ["science::geo"]
 edition = "2021"
 version = "0.2.1"
 
+[features]
+default = ["apidb"]
+apidb = ["dep:postgres", "dep:text-file-sort", "dep:escape_string", "dep:unescape"]
+
 [dependencies]
 bytes = "1.6"
 prost = "0.13"
@@ -21,19 +25,29 @@ chrono = "0.4"
 json = "0.12"
 transient-btree-index = "0.5"
 regex = "1.10"
-postgres = "0.19"
 num-format = "0.4"
 num_cpus = "1.16"
 rand = "0.8"
 anyhow = "1.0"
-escape_string = "0.1"
 command-executor = "0.1"
-text-file-sort = "0.1"
-unescape = "0.1"
 uuid = { version = "1.8", features = ["v4", "std"] }
+
+# apidb feature dependencies
+postgres = { version = "0.19", optional = true }
+text-file-sort = { version = "0.1", optional = true }
+escape_string = { version = "0.1", optional = true }
+unescape = { version = "0.1", optional = true }
 
 [build-dependencies]
 prost-build = "0.13"
 
 [dev-dependencies]
 benchmark-rs = "0.1"
+
+[[example]]
+name = "apidb-to-pbf"
+required-features = ["apidb"]
+
+[[example]]
+name = "pbf-to-apidb"
+required-features = ["apidb"]

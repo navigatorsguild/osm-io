@@ -22,6 +22,19 @@ planet.osm.pbf file. See [osm-admin](https://github.com/navigatorsguild/osm-admi
 Because the data sets are very large, a special attention is given to maintaining control over
 memory size and utilizing multiple CPU cores whenever is possible.
 
+## Features
+
+The crate provides the following cargo features:
+
+* `apidb` (enabled by default) - Support for PostgreSQL apidb schema format. This feature is required for database operations but depends on Unix-specific libraries. Windows users should disable this feature:
+
+```toml
+[dependencies]
+osm-io = { version = "0.2", default-features = false }
+```
+
+**Note for Windows users**: The `apidb` feature requires Unix-specific dependencies and is not supported on Windows. To build on Windows, disable default features as shown above. PBF file operations will work normally.
+
 ## Roadmap
 * implement *.osm.pbf reader and writer - Done
 * implement *.osm.pbf parallel reader and parallel writer - Done

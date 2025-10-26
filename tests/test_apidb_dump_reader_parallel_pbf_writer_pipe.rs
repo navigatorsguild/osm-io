@@ -1,3 +1,5 @@
+#![cfg(feature = "apidb")]
+
 use std::path::PathBuf;
 use simple_logger::SimpleLogger;
 use osm_io::osm::apidb_dump::read::reader::Reader;
