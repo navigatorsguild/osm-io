@@ -9,7 +9,7 @@ readme = "README.md"
 keywords = ["OSM", "openstreetmap", "geo", "map", "osm-pbf"]
 categories = ["science::geo"]
 edition = "2021"
-version = "0.2.1"
+version = "0.2.2"
 
 [features]
 default = ["apidb"]
