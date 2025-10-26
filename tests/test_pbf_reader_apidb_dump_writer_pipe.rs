@@ -1,3 +1,5 @@
+#![cfg(feature = "apidb")]
+
 use std::path::PathBuf;
 
 use benchmark_rs::stopwatch::StopWatch;
