@@ -43,11 +43,3 @@ prost-build = "0.13"
 
 [dev-dependencies]
 benchmark-rs = "0.1"
-
-[[example]]
-name = "apidb-to-pbf"
-required-features = ["apidb"]
-
-[[example]]
-name = "pbf-to-apidb"
-required-features = ["apidb"]
