@@ -92,7 +92,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     match Arc::try_unwrap(writer) {
         Ok(mutex) => {
-            let mut w = mutex.into_inner().unwrap();
+            let mut w = mutex.into_inner()?;
             w.close()?;
         }
         Err(_) => {
