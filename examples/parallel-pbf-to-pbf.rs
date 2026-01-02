@@ -1,13 +1,13 @@
+use anyhow::anyhow;
 use benchmark_rs::stopwatch::StopWatch;
 use log::LevelFilter;
-use simple_logger::SimpleLogger;
-use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
-
 use osm_io::osm::pbf;
 use osm_io::osm::pbf::compression_type::CompressionType;
 use osm_io::osm::pbf::file_info::FileInfo;
 use osm_io::osm::pbf::parallel_block_writer::ParallelBlockWriter;
+use simple_logger::SimpleLogger;
+use std::path::PathBuf;
+use std::sync::{Arc, Mutex};
 
 fn main() -> Result<(), anyhow::Error> {
     SimpleLogger::new()
@@ -41,7 +41,7 @@ fn main() -> Result<(), anyhow::Error> {
         reader.parallel_for_each_ordered_block(4, move |block_index, elements| {
             let mut w = match writer_clone.lock() {
                 Ok(x) => x,
-                Err(_) => todo!(),
+                Err(_) => return Err(anyhow!("Writer lock poisoned")),
             };
             w.write_ordered_block(block_index, elements)?;
             Ok(())
