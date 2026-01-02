@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 use anyhow::anyhow;
 use command_executor::shutdown_mode::ShutdownMode;
@@ -12,6 +12,7 @@ use crate::osm::pbf::blob_iterator::BlobIterator;
 use crate::osm::pbf::element_iterator::ElementIterator;
 use crate::osm::pbf::file_block_iterator::FileBlockIterator;
 use crate::osm::pbf::file_info::FileInfo;
+use crate::osm::pbf::parallel_block_iteration_command::ParallelBlockIterationCommand;
 use crate::osm::pbf::parallel_element_iteration_command::ParallelElementIterationCommand;
 
 #[derive(Debug, Clone)]
@@ -50,9 +51,10 @@ impl Reader {
             info: Default::default(),
         };
         let mut block_iterator = reader.clone().blocks()?;
-        let file_block = block_iterator.next().ok_or(
-            anyhow!("Failed to parse file header, path: {}", path.display())
-        )?;
+        let file_block = block_iterator.next().ok_or(anyhow!(
+            "Failed to parse file header, path: {}",
+            path.display()
+        ))?;
         let osm_header = file_block.as_osm_header()?;
         reader.info = osm_header.info().clone();
 
@@ -61,9 +63,7 @@ impl Reader {
             reader.info().required_features(),
         )?;
 
-        Ok(
-            reader
-        )
+        Ok(reader)
     }
 
     pub(crate) fn blobs(&self) -> Result<BlobIterator, anyhow::Error> {
@@ -73,14 +73,8 @@ impl Reader {
     /// Low level [FileBlockIterator] used to access the sequence of underlying PBF blocks
     pub fn blocks(&self) -> Result<FileBlockIterator, anyhow::Error> {
         match self.blobs() {
-            Ok(blob_iterator) => {
-                Ok(
-                    FileBlockIterator::new(blob_iterator)
-                )
-            }
-            Err(e) => {
-                Err(e)
-            }
+            Ok(blob_iterator) => Ok(FileBlockIterator::new(blob_iterator)),
+            Err(e) => Err(e),
         }
     }
 
@@ -123,14 +117,8 @@ impl Reader {
     /// ```
     pub fn elements(&self) -> Result<ElementIterator, anyhow::Error> {
         match self.blocks() {
-            Ok(file_block_iterator) => {
-                Ok(
-                    ElementIterator::new(file_block_iterator)
-                )
-            }
-            Err(e) => {
-                Err(e)
-            }
+            Ok(file_block_iterator) => Ok(ElementIterator::new(file_block_iterator)),
+            Err(e) => Err(e),
         }
     }
 
@@ -180,7 +168,11 @@ impl Reader {
     ///     Ok(())
     /// }
     /// ```
-    pub fn parallel_for_each(&self, tasks: usize, f: impl Fn(Element) -> Result<(), anyhow::Error> + Send + Sync + 'static) -> Result<(), anyhow::Error> {
+    pub fn parallel_for_each(
+        &self,
+        tasks: usize,
+        f: impl Fn(Element) -> Result<(), anyhow::Error> + Send + Sync + 'static,
+    ) -> Result<(), anyhow::Error> {
         let mut iteration_pool = ThreadPoolBuilder::new()
             .with_tasks(tasks)
             .with_queue_size(1024)
@@ -191,11 +183,10 @@ impl Reader {
         let f_wrapper = Arc::new(f);
         for blob_desc in self.blobs()? {
             let f_wrapper_clone = f_wrapper.clone();
-            iteration_pool.submit(
-                Box::new(
-                    ParallelElementIterationCommand::new(blob_desc, f_wrapper_clone)
-                )
-            );
+            iteration_pool.submit(Box::new(ParallelElementIterationCommand::new(
+                blob_desc,
+                f_wrapper_clone,
+            )));
         }
 
         iteration_pool.shutdown();
@@ -203,26 +194,68 @@ impl Reader {
         Ok(())
     }
 
-    fn find_missing_features(supported_features: &[String], required_features: &[String]) -> Vec<String> {
+    /// Parallel iteration over blocks in a *.osm.pbf file
+    ///
+    /// Processes each block in parallel while preserving block order information.
+    /// The callback function receives:
+    /// - `block_index`: The sequential index of the block in the file (0-based, excluding header)
+    /// - `elements`: Vector of all elements in that block
+    ///
+    /// Note that blocks are processed in parallel, so the callback may be invoked out of order.
+    /// The block_index allows downstream code to reorder results if needed.
+    pub fn parallel_for_each_ordered_block(
+        &self,
+        tasks: usize,
+        f: impl Fn(usize, Vec<Element>) -> Result<(), anyhow::Error> + Send + Sync + 'static,
+    ) -> Result<(), anyhow::Error> {
+        let mut iteration_pool = ThreadPoolBuilder::new()
+            .with_tasks(tasks)
+            .with_queue_size(1024)
+            .with_shutdown_mode(ShutdownMode::CompletePending)
+            .with_name_str("parallel-block-iterator")
+            .build()?;
+
+        let f_wrapper = Arc::new(f);
+
+        for blob_desc in self.blobs()? {
+            let f_wrapper_clone = f_wrapper.clone();
+
+            iteration_pool.submit(Box::new(ParallelBlockIterationCommand::new(
+                blob_desc,
+                f_wrapper_clone,
+            )));
+        }
+
+        iteration_pool.shutdown();
+        iteration_pool.join()?;
+        Ok(())
+    }
+
+    fn find_missing_features(
+        supported_features: &[String],
+        required_features: &[String],
+    ) -> Vec<String> {
         let supported: HashSet<&String> = supported_features.iter().collect::<HashSet<&String>>();
         let required: HashSet<&String> = required_features.iter().collect::<HashSet<&String>>();
         if required.is_subset(&supported) {
             vec![]
         } else {
-            required.difference(&supported)
+            required
+                .difference(&supported)
                 .map(|e| (*e).clone())
                 .collect::<Vec<String>>()
         }
     }
 
-    fn verify_supported_features(supported_features: &[String], required_features: &[String]) -> Result<(), anyhow::Error> {
+    fn verify_supported_features(
+        supported_features: &[String],
+        required_features: &[String],
+    ) -> Result<(), anyhow::Error> {
         let missing_features = Self::find_missing_features(supported_features, required_features);
         if missing_features.is_empty() {
             Ok(())
         } else {
-            Err(
-                anyhow!("Unsupported features: {missing_features:?}")
-            )
+            Err(anyhow!("Unsupported features: {missing_features:?}"))
         }
     }
 
@@ -258,16 +291,13 @@ impl Reader {
                 Element::Sentinel => {}
             }
             Ok(())
-        },
-        )?;
+        })?;
 
-        Ok(
-            (
-                nodes_clone.load(Ordering::SeqCst) as i64,
-                ways_clone.load(Ordering::SeqCst) as i64,
-                relations_clone.load(Ordering::SeqCst) as i64
-            )
-        )
+        Ok((
+            nodes_clone.load(Ordering::SeqCst) as i64,
+            ways_clone.load(Ordering::SeqCst) as i64,
+            relations_clone.load(Ordering::SeqCst) as i64,
+        ))
     }
 }
 
@@ -286,7 +316,6 @@ mod tests {
         required = vec!["a".to_string(), "b".to_string()];
         missing = Reader::find_missing_features(&supported, &required);
         assert_eq!(missing, vec!["b".to_string()]);
-
 
         supported = vec!["a".to_string(), "b".to_string()];
         required = vec!["a".to_string()];

@@ -4,7 +4,6 @@ use std::ops::Index;
 
 use prost::Message;
 
-use crate::{osm, osmpbf};
 use crate::osm::model::bounding_box::BoundingBox;
 use crate::osm::model::element::Element;
 use crate::osm::pbf::dense_group_builder::DenseGroupBuilder;
@@ -12,6 +11,7 @@ use crate::osm::pbf::relations_group_builder::RelationsGroupBuilder;
 use crate::osm::pbf::string_table_builder::StringTableBuilder;
 use crate::osm::pbf::ways_group_builder::WaysGroupBuilder;
 use crate::osmpbf::{PrimitiveBlock, PrimitiveGroup};
+use crate::{osm, osmpbf};
 
 #[derive(Debug, Default)]
 pub struct OsmData {
@@ -21,13 +21,10 @@ pub struct OsmData {
 
 impl OsmData {
     pub fn new(data: Vec<u8>) -> Result<OsmData, anyhow::Error> {
-        let primitive_block = PrimitiveBlock::decode(&mut Cursor::new(data))?;
-        let string_table: Vec<String> = primitive_block.stringtable.s.iter()
-            .map(
-                |e| {
-                    String::from_utf8(e.clone()).unwrap()
-                }
-            )
+        let mut primitive_block = PrimitiveBlock::decode(&mut Cursor::new(data))?;
+        let string_table: Vec<String> = std::mem::take(&mut primitive_block.stringtable.s)
+            .into_iter()
+            .map(|e| String::from_utf8_lossy(&e).into_owned())
             .collect();
         let granularity = primitive_block.granularity() as i64;
         let date_granularity = primitive_block.date_granularity();
@@ -35,57 +32,100 @@ impl OsmData {
         let lon_offset = primitive_block.lon_offset();
         let mut elements = Vec::<Element>::with_capacity(8000);
         for g in &primitive_block.primitivegroup {
-            Self::read_dense(&g.dense, &string_table, granularity, date_granularity, lat_offset, lon_offset, &mut elements);
-            Self::read_nodes(&g.nodes, &string_table, granularity, date_granularity, lat_offset, lon_offset, &mut elements);
-            Self::read_ways(&g.ways, &string_table, granularity, date_granularity, &mut elements);
-            Self::read_relations(&g.relations, &string_table, granularity, date_granularity, &mut elements);
-            Self::read_changesets(&g.changesets, &string_table, granularity, date_granularity, lat_offset, lon_offset, &mut elements);
+            Self::read_dense(
+                &g.dense,
+                &string_table,
+                granularity,
+                date_granularity,
+                lat_offset,
+                lon_offset,
+                &mut elements,
+            );
+            Self::read_nodes(
+                &g.nodes,
+                &string_table,
+                granularity,
+                date_granularity,
+                lat_offset,
+                lon_offset,
+                &mut elements,
+            );
+            Self::read_ways(
+                &g.ways,
+                &string_table,
+                granularity,
+                date_granularity,
+                &mut elements,
+            );
+            Self::read_relations(
+                &g.relations,
+                &string_table,
+                granularity,
+                date_granularity,
+                &mut elements,
+            );
+            Self::read_changesets(
+                &g.changesets,
+                &string_table,
+                granularity,
+                date_granularity,
+                lat_offset,
+                lon_offset,
+                &mut elements,
+            );
         }
-        Ok(
-            OsmData { elements, bounding_box: None }
-        )
+        Ok(OsmData {
+            elements,
+            bounding_box: None,
+        })
     }
 
     pub fn from_elements(elements: Vec<Element>, bounding_box: Option<BoundingBox>) -> OsmData {
-        OsmData { elements, bounding_box }
+        OsmData {
+            elements,
+            bounding_box,
+        }
     }
 
     pub fn compute_bounding_box(&self) -> Option<BoundingBox> {
         if self.bounding_box.is_none() {
             self.recompute_bounding_box()
         } else {
-            self.bounding_box.clone()
+            self.bounding_box
         }
     }
 
-    #[allow(clippy::unnecessary_unwrap)]
     pub fn recompute_bounding_box(&self) -> Option<BoundingBox> {
-        let mut result = None;
+        let mut result: Option<BoundingBox> = None;
         for element in &self.elements {
             match element {
-                Element::Node { node } => {
-                    if result.is_none() {
-                        result = Some(
-                            BoundingBox::new(
-                                node.coordinate().lon(),
-                                node.coordinate().lat(),
-                                node.coordinate().lon(),
-                                node.coordinate().lat(),
-                            )
-                        )
-                    } else {
-                        result.as_mut().unwrap().merge_point(node.coordinate());
-                    }
+                Element::Node { node } => match result.as_mut() {
+                    Some(bbox) => bbox.merge_point(node.coordinate()),
+                    None => result = Some(BoundingBox::from_point(node.coordinate())),
+                },
+                Element::Way { .. } => {
+                    break;
                 }
-                Element::Way { .. } => { break; }
-                Element::Relation { .. } => { break; }
-                Element::Sentinel => { break; }
+                Element::Relation { .. } => {
+                    break;
+                }
+                Element::Sentinel => {
+                    break;
+                }
             }
         }
         result
     }
 
-    fn read_dense(dense_group: &Option<osmpbf::DenseNodes>, string_table: &Vec<String>, granularity: i64, date_granularity: i32, lat_offset: i64, lon_offset: i64, elements: &mut Vec<Element>) {
+    fn read_dense(
+        dense_group: &Option<osmpbf::DenseNodes>,
+        string_table: &Vec<String>,
+        granularity: i64,
+        date_granularity: i32,
+        lat_offset: i64,
+        lon_offset: i64,
+        elements: &mut Vec<Element>,
+    ) {
         if let Some(dense) = dense_group {
             let mut last_id = 0_i64;
             let mut last_lat = 0_i64;
@@ -105,8 +145,12 @@ impl OsmData {
             }
             let mut visible = true;
 
-            let mut key_val_iterator = <Vec<i32> as Borrow<Vec<i32>>>::borrow(&dense.keys_vals).iter();
-            for (i, id) in <Vec<i64> as Borrow<Vec<i64>>>::borrow(&dense.id).iter().enumerate() {
+            let mut key_val_iterator =
+                <Vec<i32> as Borrow<Vec<i32>>>::borrow(&dense.keys_vals).iter();
+            for (i, id) in <Vec<i64> as Borrow<Vec<i64>>>::borrow(&dense.id)
+                .iter()
+                .enumerate()
+            {
                 last_id += id;
                 last_lat += dense.lat[i];
                 last_lon += dense.lon[i];
@@ -135,13 +179,15 @@ impl OsmData {
                         break;
                     } else {
                         let key = *key_val as usize;
-                        let val = *key_val_iterator.next().unwrap() as usize;
-                        tags.push(
-                            osm::model::tag::Tag::new(
-                                string_table.index(key).clone(),
-                                string_table.index(val).clone(),
-                            )
-                        );
+                        // TODO: handle missing value properly (log warning or propagate error)
+                        let Some(val_ref) = key_val_iterator.next() else {
+                            break;
+                        };
+                        let val = *val_ref as usize;
+                        tags.push(osm::model::tag::Tag::new(
+                            string_table.index(key).as_str(),
+                            string_table.index(val).as_str(),
+                        ));
                     }
                 }
 
@@ -166,7 +212,15 @@ impl OsmData {
         }
     }
 
-    fn read_nodes(node_group: &Vec<osmpbf::Node>, string_table: &[String], granularity: i64, date_granularity: i32, lat_offset: i64, lon_offset: i64, elements: &mut Vec<Element>) {
+    fn read_nodes(
+        node_group: &Vec<osmpbf::Node>,
+        string_table: &[String],
+        granularity: i64,
+        date_granularity: i32,
+        lat_offset: i64,
+        lon_offset: i64,
+        elements: &mut Vec<Element>,
+    ) {
         for node in node_group {
             let id = node.id;
             let coordinate = osm::model::coordinate::Coordinate::new(
@@ -179,27 +233,23 @@ impl OsmData {
 
             let mut tags = Vec::<osm::model::tag::Tag>::new();
             for i in 0..node.keys.len() {
-                let k = string_table[node.keys[i] as usize].clone();
-                let v = string_table[node.vals[i] as usize].clone();
+                let k = &string_table[node.keys[i] as usize];
+                let v = &string_table[node.vals[i] as usize];
                 tags.push(osm::model::tag::Tag::new(k, v));
             }
 
             let node = osm::model::node::Node::new(
-                id,
-                version,
-                coordinate,
-                timestamp,
-                changeset,
-                uid,
-                user,
-                visible,
-                tags,
+                id, version, coordinate, timestamp, changeset, uid, user, visible, tags,
             );
             elements.push(Element::Node { node });
         }
     }
 
-    fn read_info(string_table: &[String], date_granularity: i32, info_opt: &Option<osmpbf::Info>) -> (i64, i64, i32, String, bool, i32) {
+    fn read_info(
+        string_table: &[String],
+        date_granularity: i32,
+        info_opt: &Option<osmpbf::Info>,
+    ) -> (i64, i64, i32, String, bool, i32) {
         let mut timestamp = -1_i64;
         let mut changeset = -1_i64;
         let mut uid = -1_i32;
@@ -220,8 +270,13 @@ impl OsmData {
         (timestamp, changeset, uid, user, visible, version)
     }
 
-
-    fn read_ways(way_group: &Vec<osmpbf::Way>, string_table: &[String], _granularity: i64, date_granularity: i32, elements: &mut Vec<Element>) {
+    fn read_ways(
+        way_group: &Vec<osmpbf::Way>,
+        string_table: &[String],
+        _granularity: i64,
+        date_granularity: i32,
+        elements: &mut Vec<Element>,
+    ) {
         for way in way_group {
             let id = way.id;
             let (timestamp, changeset, uid, user, visible, version) =
@@ -236,27 +291,25 @@ impl OsmData {
 
             let mut tags = Vec::<osm::model::tag::Tag>::new();
             for i in 0..way.keys.len() {
-                let k = string_table[way.keys[i] as usize].clone();
-                let v = string_table[way.vals[i] as usize].clone();
+                let k = &string_table[way.keys[i] as usize];
+                let v = &string_table[way.vals[i] as usize];
                 tags.push(osm::model::tag::Tag::new(k, v));
             }
 
             let way = osm::model::way::Way::new(
-                id,
-                version,
-                timestamp,
-                changeset,
-                uid,
-                user,
-                visible,
-                refs,
-                tags,
+                id, version, timestamp, changeset, uid, user, visible, refs, tags,
             );
             elements.push(Element::Way { way });
         }
     }
 
-    fn read_relations(relation_group: &Vec<osmpbf::Relation>, string_table: &[String], _granularity: i64, date_granularity: i32, elements: &mut Vec<Element>) {
+    fn read_relations(
+        relation_group: &Vec<osmpbf::Relation>,
+        string_table: &[String],
+        _granularity: i64,
+        date_granularity: i32,
+        elements: &mut Vec<Element>,
+    ) {
         for relation in relation_group {
             let id = relation.id;
             let (timestamp, changeset, uid, user, visible, version) =
@@ -287,33 +340,32 @@ impl OsmData {
 
             let mut tags = Vec::<osm::model::tag::Tag>::new();
             for i in 0..relation.keys.len() {
-                let k = string_table[relation.keys[i] as usize].clone();
-                let v = string_table[relation.vals[i] as usize].clone();
+                let k = &string_table[relation.keys[i] as usize];
+                let v = &string_table[relation.vals[i] as usize];
                 tags.push(osm::model::tag::Tag::new(k, v));
             }
 
             let relation = osm::model::relation::Relation::new(
-                id,
-                version,
-                timestamp,
-                changeset,
-                uid,
-                user,
-                visible,
-                members,
-                tags,
+                id, version, timestamp, changeset, uid, user, visible, members, tags,
             );
             elements.push(Element::Relation { relation });
         }
     }
 
-    fn read_changesets(changeset_group: &[osmpbf::ChangeSet], _string_table: &[String], _granularity: i64, _date_granularity: i32, _lat_offset: i64, _lon_offset: i64, _elements: &mut [Element]) {
+    fn read_changesets(
+        changeset_group: &[osmpbf::ChangeSet],
+        _string_table: &[String],
+        _granularity: i64,
+        _date_granularity: i32,
+        _lat_offset: i64,
+        _lon_offset: i64,
+        _elements: &mut [Element],
+    ) {
         if let Some(_changeset) = changeset_group.iter().next() {
             panic!("According to documentation changesets are not used");
         }
     }
 
-    #[allow(clippy::unnecessary_unwrap)]
     pub fn serialize(&self) -> Result<Vec<u8>, anyhow::Error> {
         let mut string_table_builder = StringTableBuilder::new();
         let granularity = 100_i32;
@@ -321,48 +373,54 @@ impl OsmData {
         let lat_offset = 0_i64;
         let lon_offset = 0_i64;
 
-        let mut dense_group_builder = None;
-        let mut ways_group_builder = None;
-        let mut relations_group_builder = None;
+        let mut dense_group_builder: Option<DenseGroupBuilder> = None;
+        let mut ways_group_builder: Option<WaysGroupBuilder> = None;
+        let mut relations_group_builder: Option<RelationsGroupBuilder> = None;
         for element in &self.elements {
             match element {
-                Element::Node { node } => {
-                    if dense_group_builder.is_none() {
-                        dense_group_builder = Some(
-                            DenseGroupBuilder::new(granularity, date_granularity, lat_offset, lon_offset, node, &mut string_table_builder)
-                        );
-                    } else {
-                        dense_group_builder.as_mut().unwrap().add(node, &mut string_table_builder)
+                Element::Node { node } => match dense_group_builder.as_mut() {
+                    Some(builder) => builder.add(node, &mut string_table_builder),
+                    None => {
+                        dense_group_builder = Some(DenseGroupBuilder::new(
+                            granularity,
+                            date_granularity,
+                            lat_offset,
+                            lon_offset,
+                            node,
+                            &mut string_table_builder,
+                        ))
                     }
-                }
-                Element::Way { way } => {
-                    if ways_group_builder.is_none() {
-                        ways_group_builder = Some(
-                            WaysGroupBuilder::new(date_granularity, way, &mut string_table_builder)
-                        );
-                    } else {
-                        ways_group_builder.as_mut().unwrap().add(way, &mut string_table_builder)
+                },
+                Element::Way { way } => match ways_group_builder.as_mut() {
+                    Some(builder) => builder.add(way, &mut string_table_builder),
+                    None => {
+                        ways_group_builder = Some(WaysGroupBuilder::new(
+                            date_granularity,
+                            way,
+                            &mut string_table_builder,
+                        ))
                     }
-                }
-                Element::Relation { relation } => {
-                    if relations_group_builder.is_none() {
-                        relations_group_builder = Some(
-                            RelationsGroupBuilder::new(date_granularity, relation, &mut string_table_builder)
-                        );
-                    } else {
-                        relations_group_builder.as_mut().unwrap().add(relation, &mut string_table_builder)
+                },
+                Element::Relation { relation } => match relations_group_builder.as_mut() {
+                    Some(builder) => builder.add(relation, &mut string_table_builder),
+                    None => {
+                        relations_group_builder = Some(RelationsGroupBuilder::new(
+                            date_granularity,
+                            relation,
+                            &mut string_table_builder,
+                        ))
                     }
-                }
+                },
                 Element::Sentinel => {}
             }
         }
         let mut primitivegroup = PrimitiveGroup::default();
-        if dense_group_builder.is_some() {
-            primitivegroup = dense_group_builder.unwrap().build();
-        } else if ways_group_builder.is_some() {
-            primitivegroup = ways_group_builder.unwrap().build();
-        } else if relations_group_builder.is_some() {
-            primitivegroup = relations_group_builder.unwrap().build();
+        if let Some(mut builder) = dense_group_builder {
+            primitivegroup = builder.build();
+        } else if let Some(mut builder) = ways_group_builder {
+            primitivegroup = builder.build();
+        } else if let Some(mut builder) = relations_group_builder {
+            primitivegroup = builder.build();
         }
 
         let stringtable = string_table_builder.build();

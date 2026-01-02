@@ -18,14 +18,12 @@ impl OsmHeader {
         let header_block = osmpbf::HeaderBlock::decode(&mut Cursor::new(data))?;
         let mut bounding_box = None;
         if let Some(bbox) = header_block.bbox {
-            bounding_box = Some(
-                BoundingBox::new(
-                    bbox.left as f64 / NANODEG,
-                    bbox.bottom as f64 / NANODEG,
-                    bbox.right as f64 / NANODEG,
-                    bbox.top as f64 / NANODEG,
-                )
-            )
+            bounding_box = Some(BoundingBox::new(
+                bbox.left as f64 / NANODEG,
+                bbox.bottom as f64 / NANODEG,
+                bbox.right as f64 / NANODEG,
+                bbox.top as f64 / NANODEG,
+            ))
         }
 
         let required_features = header_block.required_features;
@@ -47,26 +45,25 @@ impl OsmHeader {
             osmosis_replication_base_url,
         );
 
-        Ok(
-            OsmHeader {
-                info,
-            }
-        )
+        Ok(OsmHeader { info })
     }
 
     pub fn from_file_info(file_info: FileInfo) -> OsmHeader {
         OsmHeader {
-            info: file_info.clone()
+            info: file_info.clone(),
         }
     }
 
     fn header_bbox(&self) -> Option<osmpbf::HeaderBBox> {
-        self.info.bounding_box().as_ref().map(|bounding_box| osmpbf::HeaderBBox {
-            left: (bounding_box.left() * NANODEG) as i64,
-            right: (bounding_box.right() * NANODEG) as i64,
-            top: (bounding_box.top() * NANODEG) as i64,
-            bottom: (bounding_box.bottom() * NANODEG) as i64,
-        })
+        self.info
+            .bounding_box()
+            .as_ref()
+            .map(|bounding_box| osmpbf::HeaderBBox {
+                left: (bounding_box.left() * NANODEG) as i64,
+                right: (bounding_box.right() * NANODEG) as i64,
+                top: (bounding_box.top() * NANODEG) as i64,
+                bottom: (bounding_box.bottom() * NANODEG) as i64,
+            })
     }
 
     pub fn serialize(&self) -> Result<Vec<u8>, anyhow::Error> {
@@ -81,7 +78,7 @@ impl OsmHeader {
             osmosis_replication_base_url: self.info.osmosis_replication_base_url().clone(),
         };
 
-        let mut buf = Vec::<u8>::with_capacity(512);
+        let mut buf = Vec::<u8>::with_capacity(header_block.encoded_len());
         header_block.encode(&mut buf)?;
         Ok(buf)
     }
