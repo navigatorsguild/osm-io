@@ -17,8 +17,8 @@ fn main() -> Result<(), anyhow::Error> {
     log::info!("Started parallel pbf reader pbf writer pipeline");
     let mut stopwatch = StopWatch::new();
     stopwatch.start();
-    let input_path = PathBuf::from("../osm-admin-data/osm-io-fixtures/denmark-240422.osm.pbf");
-    let output_path = PathBuf::from("./target/results/denmark-240422.osm.pbf");
+    let input_path = PathBuf::from("./tests/fixtures/niue-230109.osm.pbf");
+    let output_path = PathBuf::from("./target/results/niue-230109.osm.pbf");
 
     let reader = pbf::reader::Reader::new(&input_path)?;
 
