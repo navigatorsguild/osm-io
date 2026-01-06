@@ -30,8 +30,8 @@ pub fn main() -> Result<(), anyhow::Error> {
             )?
         )
     );
+    
     let parallel_writer_clone = parallel_writer.clone();
-
     let tl_acc = ThreadLocalAccumulator::new(8000);
 
     {

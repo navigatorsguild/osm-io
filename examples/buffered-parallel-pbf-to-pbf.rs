@@ -4,6 +4,7 @@ use log::LevelFilter;
 use osm_io::osm::model::element::Element;
 use osm_io::osm::pbf;
 use osm_io::osm::pbf::compression_type::CompressionType;
+use osm_io::osm::pbf::thread_local_accumulator::ThreadLocalAccumulator;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -49,8 +50,9 @@ pub fn main() -> Result<(), anyhow::Error> {
         )?,
     ));
 
-    // TODO: document to filter out sentinel
-    // TODO: abort with clear failure when header is not written
+    let parallel_writer_clone = parallel_writer.clone();
+    let tl_acc = ThreadLocalAccumulator::new(8000);
+
     {
         let mut parallel_writer_guard = parallel_writer
             .lock()
@@ -58,7 +60,6 @@ pub fn main() -> Result<(), anyhow::Error> {
         parallel_writer_guard.write_header()?;
     }
 
-    let parallel_writer_clone = parallel_writer.clone();
     reader.parallel_for_each(4, move |element| {
         let mut filter_out = false;
         match &element {
@@ -67,18 +68,19 @@ pub fn main() -> Result<(), anyhow::Error> {
             Element::Relation { .. } => {}
             Element::Sentinel => {
                 filter_out = true;
+                let mut parallel_writer_guard = parallel_writer
+                    .lock()
+                    .map_err(|e| anyhow::anyhow!("Failed to lock parallel writer: {}", e))?;
+                parallel_writer_guard.write_elements(tl_acc.elements())?;
             }
         }
         if !filter_out {
-            let mut parallel_writer_guard = parallel_writer_clone
-                .lock()
-                .map_err(|e| anyhow::anyhow!("Failed to lock parallel writer: {}", e))?;
-            parallel_writer_guard.write_element(element)?;
+            tl_acc.add(element);
         }
         Ok(())
     })?;
 
-    let mut parallel_writer_guard = parallel_writer
+    let mut parallel_writer_guard = parallel_writer_clone
         .lock()
         .map_err(|e| anyhow::anyhow!("Failed to lock parallel writer: {}", e))?;
     parallel_writer_guard.close()?;

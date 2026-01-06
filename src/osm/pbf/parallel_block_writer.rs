@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
@@ -23,6 +22,7 @@ thread_local! {
     #[allow(clippy::type_complexity)]
     static BLOCK_ORDERING_BUFFER: RefCell<BTreeMap<usize, Vec<Element>>> = const { RefCell::new(BTreeMap::new()) };
     static BLOCK_CONSOLIDATION_ACCUMULATOR: RefCell<Vec<Element>> = const { RefCell::new(Vec::new()) };
+    static NEXT_EXPECTED_INPUT_BLOCK: RefCell<usize> = const { RefCell::new(1) };
     static OUTPUT_BLOCK_INDEX: RefCell<usize> = const { RefCell::new(1) };
     static BLOCK_ENCODING_POOL: RefCell<Option<Arc<RwLock<ThreadPool>>>> = const { RefCell::new(None) };
     static BLOCK_COMPRESSION_TYPE: RefCell<Option<CompressionType>> = const { RefCell::new(None) };
@@ -30,7 +30,7 @@ thread_local! {
     static BLOCK_COMPRESSION_BUFFER_SIZE: RefCell<Option<usize>> = const { RefCell::new(None) };
     static BLOCK_WRITING_POOL: RefCell<Option<Arc<RwLock<ThreadPool>>>> = const { RefCell::new(None) };
     #[allow(clippy::type_complexity)]
-    pub static BLOCK_BLOB_ORDERING_BUFFER: RefCell<HashMap<usize, (Vec<u8>, Vec<u8>)>> = RefCell::new(HashMap::new());
+    pub static BLOCK_BLOB_ORDERING_BUFFER: RefCell<BTreeMap<usize, (Vec<u8>, Vec<u8>)>> = const { RefCell::new(BTreeMap::new()) };
     pub static BLOCK_NEXT_TO_WRITE: RefCell<usize> = const { RefCell::new(1) };
     pub static BLOCK_PBF_WRITER: RefCell<Option<Writer>> = const { RefCell::new(None) };
 }
@@ -227,13 +227,58 @@ impl Command for WriteBlockBlobCommand {
 }
 
 // noinspection DuplicatedCode
+fn flush_all_blobs() {
+    BLOCK_BLOB_ORDERING_BUFFER.with(|buffer| {
+        BLOCK_PBF_WRITER.with(|writer| {
+            let mut buffer = buffer.borrow_mut();
+            while let Some((_index, (header, body))) = buffer.pop_first() {
+                writer
+                    .borrow_mut()
+                    .as_mut()
+                    .expect("Block PBF writer not initialized")
+                    .write_blob(header, body)
+                    .expect("Failed to write blob");
+            }
+            // Close the writer
+            if let Some(w) = writer.borrow_mut().as_mut() {
+                w.close().expect("Failed to close PBF writer");
+            }
+        })
+    });
+}
+
+fn flush_accumulator(acc: &mut Vec<Element>) {
+    if acc.is_empty() {
+        return;
+    }
+    OUTPUT_BLOCK_INDEX.with(|output_index| {
+        let block_id = *output_index.borrow();
+        *output_index.borrow_mut() += 1;
+
+        let output_elements = std::mem::take(acc);
+
+        BLOCK_ENCODING_POOL.with(|encoding_pool| {
+            let pool = encoding_pool.borrow();
+            let pool_guard = pool
+                .as_ref()
+                .expect("Block encoding pool not initialized")
+                .read()
+                .expect("Failed to lock block encoding pool");
+            pool_guard.submit(Box::new(EncodeBlockCommand::new(
+                block_id,
+                Mutex::new(output_elements),
+            )));
+        });
+    });
+}
+
+// noinspection DuplicatedCode
 fn flush_all_blocks() {
     BLOCK_CONSOLIDATION_ACCUMULATOR.with(|accumulator| {
         BLOCK_ORDERING_BUFFER.with(|block_ordering_buffer| {
             let mut acc = accumulator.borrow_mut();
             let mut buffer = block_ordering_buffer.borrow_mut();
 
-            // Drain all remaining blocks from buffer into accumulator
             while !buffer.is_empty() {
                 let first_index = *buffer.keys().next().unwrap();
                 let mut expected_index = first_index;
@@ -242,6 +287,14 @@ fn flush_all_blocks() {
                 for (idx, elements) in buffer.iter_mut() {
                     if *idx != expected_index {
                         break;
+                    }
+
+                    // Check type boundary - flush acc first if types differ
+                    if !acc.is_empty()
+                        && !elements.is_empty()
+                        && !Element::same_type(&acc[0], &elements[0])
+                    {
+                        flush_accumulator(&mut acc);
                     }
 
                     acc.extend(elements.drain(..));
@@ -254,24 +307,8 @@ fn flush_all_blocks() {
                 }
             }
 
-            // Flush whatever is left in accumulator, even if less than 8000
-            if !acc.is_empty() {
-                OUTPUT_BLOCK_INDEX.with(|output_index| {
-                    let block_id = *output_index.borrow();
-                    *output_index.borrow_mut() += 1;
-
-                    let output_elements = std::mem::take(&mut *acc);
-
-                    BLOCK_ENCODING_POOL.with(|encoding_pool| {
-                        let pool = encoding_pool.borrow();
-                        let pool_guard = pool.as_ref().unwrap().read().unwrap();
-                        pool_guard.submit(Box::new(EncodeBlockCommand::new(
-                            block_id,
-                            Mutex::new(output_elements),
-                        )));
-                    });
-                });
-            }
+            // Flush whatever is left
+            flush_accumulator(&mut acc);
         })
     });
 }
@@ -279,60 +316,71 @@ fn flush_all_blocks() {
 fn consolidate_blocks() -> Option<(usize, Vec<Element>)> {
     BLOCK_CONSOLIDATION_ACCUMULATOR.with(|accumulator| {
         BLOCK_ORDERING_BUFFER.with(|block_ordering_buffer| {
-            let mut acc = accumulator.borrow_mut();
-            let mut buffer = block_ordering_buffer.borrow_mut();
+            NEXT_EXPECTED_INPUT_BLOCK.with(|next_expected| {
+                let mut acc = accumulator.borrow_mut();
+                let mut buffer = block_ordering_buffer.borrow_mut();
+                let mut type_boundary = false;
+                let expected_input = *next_expected.borrow();
 
-            let result = if !buffer.is_empty() {
-                let first_index = *buffer.keys().next().unwrap();
-                let mut expected_index = first_index;
-
-                // Check for contiguous blocks and drain into accumulator
-                let mut keys_to_remove = Vec::new();
-
-                for (idx, elements) in buffer.iter_mut() {
-                    if *idx != expected_index {
-                        break; // Gap found, not contiguous
+                if let Some((&first_index, _)) = buffer.first_key_value() {
+                    // Wait for the expected input block
+                    if first_index != expected_input {
+                        return None;
                     }
 
-                    let space_available = 8000 - acc.len();
-                    if elements.len() <= space_available {
-                        // Take all elements from this block
-                        acc.extend(elements.drain(..));
-                        keys_to_remove.push(*idx);
-                    } else {
-                        // Take only what we need, leave rest in block
-                        acc.extend(elements.drain(0..space_available));
-                        break;
+                    let mut current_index = first_index;
+                    let mut keys_to_remove = Vec::new();
+
+                    for (idx, elements) in buffer.iter_mut() {
+                        if *idx != current_index {
+                            break; // Gap found, not contiguous
+                        }
+
+                        // Check type boundary
+                        if !acc.is_empty()
+                            && !elements.is_empty()
+                            && !Element::same_type(&acc[0], &elements[0])
+                        {
+                            type_boundary = true;
+                            break;
+                        }
+
+                        let space_available = 8000 - acc.len();
+                        if elements.len() <= space_available {
+                            acc.extend(elements.drain(..));
+                            keys_to_remove.push(*idx);
+                        } else {
+                            acc.extend(elements.drain(0..space_available));
+                            break;
+                        }
+
+                        if acc.len() == 8000 {
+                            break;
+                        }
+
+                        current_index += 1;
                     }
 
-                    if acc.len() >= 8000 {
-                        break;
+                    // Update next expected input block
+                    if let Some(&last_removed) = keys_to_remove.last() {
+                        *next_expected.borrow_mut() = last_removed + 1;
                     }
 
-                    expected_index += 1;
+                    for key in keys_to_remove {
+                        buffer.remove(&key);
+                    }
                 }
 
-                // Remove empty blocks
-                for key in keys_to_remove {
-                    buffer.remove(&key);
-                }
-
-                if acc.len() >= 8000 {
+                if acc.len() == 8000 || (type_boundary && !acc.is_empty()) {
                     OUTPUT_BLOCK_INDEX.with(|output_index| {
                         let block_id = *output_index.borrow();
                         *output_index.borrow_mut() += 1;
-
-                        let output_elements = std::mem::take(&mut *acc);
-                        Some((block_id, output_elements))
+                        Some((block_id, std::mem::take(&mut *acc)))
                     })
                 } else {
                     None
                 }
-            } else {
-                None
-            };
-
-            result
+            })
         })
     })
 }
@@ -530,7 +578,7 @@ impl ParallelBlockWriter {
         self.flush_block_ordering()?;
         Self::shutdown(self.block_ordering_pool.clone())?;
         Self::shutdown(self.block_encoding_pool.clone())?;
-        self.flush_block_writing();
+        self.flush_block_writing()?;
         Self::shutdown(self.block_writing_pool.clone())?;
         Ok(())
     }
@@ -544,7 +592,14 @@ impl ParallelBlockWriter {
         Ok(())
     }
 
-    fn flush_block_writing(&self) {}
+    fn flush_block_writing(&self) -> Result<(), Error> {
+        let block_writing_pool_guard = self
+            .block_writing_pool
+            .read()
+            .map_err(|e| anyhow!("Failed to lock block writing pool: {}", e))?;
+        block_writing_pool_guard.in_all_threads(Arc::new(flush_all_blobs));
+        Ok(())
+    }
 
     fn create_thread_pool(
         name: &str,
