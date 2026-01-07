@@ -5,11 +5,15 @@ pub struct Tag {
 }
 
 impl Tag {
-    pub fn new(k: String, v: String) -> Tag {
+    pub fn new(k: &str, v: &str) -> Tag {
         Tag {
-            k,
-            v,
+            k: k.to_string(),
+            v: v.to_string(),
         }
+    }
+
+    pub fn from_strings(k: String, v: String) -> Tag {
+        Tag { k, v }
     }
 
     pub fn k(&self) -> &String {

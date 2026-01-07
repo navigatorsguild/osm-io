@@ -35,33 +35,77 @@ thread_local! {
     pub static PBF_WRITER: RefCell<Option<Writer>> = const { RefCell::new(None) };
 }
 
-fn flush_sorted_top() {
+fn flush_sorted_top() -> Result<(), Error> {
     ELEMENT_ORDERING_BUFFER.with(|element_ordering_buffer| {
-        element_ordering_buffer.borrow_mut().make_contiguous().sort();
+        element_ordering_buffer
+            .borrow_mut()
+            .make_contiguous()
+            .sort();
         let elements = split_file_block(element_ordering_buffer);
-        set_current_min_element(elements.first());
+        set_current_min_element(elements.last());
         NEXT_THREAD_POOL.with(|thread_pool| {
             let thread_pool = thread_pool.borrow();
-            let thread_pool_guard = thread_pool.as_ref().unwrap().read().unwrap();
-            thread_pool_guard.submit(Box::new(EncodeFileBlockCommand::new(file_block_index(), Mutex::new(elements))));
+            let thread_pool_guard = thread_pool
+                .as_ref()
+                .ok_or_else(|| anyhow!("Thread pool not initialized"))?
+                .read()
+                .map_err(|e| anyhow!("Failed to lock thread pool: {}", e))?;
+            thread_pool_guard.submit(Box::new(EncodeFileBlockCommand::new(
+                file_block_index(),
+                Mutex::new(elements),
+            )));
             inc_file_block_index();
+            Ok(())
         })
-    });
+    })
 }
 
 fn flush_all_sorted() {
     ELEMENT_ORDERING_BUFFER.with(|element_ordering_buffer| {
-        element_ordering_buffer.borrow_mut().make_contiguous().sort();
+        element_ordering_buffer
+            .borrow_mut()
+            .make_contiguous()
+            .sort();
         while !element_ordering_buffer.borrow().is_empty() {
             let elements = split_file_block(element_ordering_buffer);
-            set_current_min_element(elements.first());
+            set_current_min_element(elements.last());
             NEXT_THREAD_POOL.with(|thread_pool| {
                 let thread_pool = thread_pool.borrow();
-                let thread_pool_guard = thread_pool.as_ref().unwrap().read().unwrap();
-                thread_pool_guard.submit(Box::new(EncodeFileBlockCommand::new(file_block_index(), Mutex::new(elements))));
+                let thread_pool_guard = thread_pool
+                    .as_ref()
+                    .expect("Thread pool not initialized")
+                    .read()
+                    .expect("Failed to lock thread pool");
+                thread_pool_guard.submit(Box::new(EncodeFileBlockCommand::new(
+                    file_block_index(),
+                    Mutex::new(elements),
+                )));
                 inc_file_block_index();
             })
         }
+    });
+}
+
+fn flush_all_blobs() {
+    BLOB_ORDERING_BUFFER.with(|buffer| {
+        PBF_WRITER.with(|writer| {
+            let mut buffer = buffer.borrow_mut();
+            while !buffer.is_empty() {
+                let first_index = *buffer.keys().next().unwrap();
+                if let Some((header, body)) = buffer.remove(&first_index) {
+                    writer
+                        .borrow_mut()
+                        .as_mut()
+                        .expect("PBF writer not initialized")
+                        .write_blob(header, body)
+                        .expect("Failed to write blob");
+                }
+            }
+            // Close the writer
+            if let Some(w) = writer.borrow_mut().as_mut() {
+                w.close().expect("Failed to close PBF writer");
+            }
+        })
     });
 }
 
@@ -106,39 +150,33 @@ fn compression_type() -> CompressionType {
     COMPRESSION_TYPE.with(|compression_type| compression_type.borrow().as_ref().unwrap().clone())
 }
 
-fn assert_order(element: &Element) {
-    if !element.is_sentinel() {
-        assert!(
-            compare_to_current_min_element(element).is_ge(),
+fn assert_order(element: &Element) -> Result<(), Error> {
+    if !element.is_sentinel() && !compare_to_current_min_element(element).is_ge() {
+        return Err(anyhow!(
             "Element order, required by OSM PBF definition is lost. \
-                    Possible cause is that the length of the ordering buffer ({}) is too short \
-                    to for compensate for the loss of order caused by concurrent processing. \
-                    Recommended: reader_tasks * 8000 * n",
+            Possible cause is that the length of the ordering buffer ({}) is too short \
+            to compensate for the loss of order caused by concurrent processing. \
+            Recommended: reader_tasks * 8000 * n",
             element_ordering_buffer_size()
-        );
+        ));
     }
+    Ok(())
 }
 
 fn compare_to_current_min_element(element: &Element) -> Ordering {
-    CURRENT_MIN_ELEMENT.with(|current_min_element|
-        match current_min_element.borrow().deref() {
-            None => {
-                Ordering::Greater
-            }
-            Some(e) => {
-                element.cmp(e)
-            }
-        }
+    CURRENT_MIN_ELEMENT.with(
+        |current_min_element| match current_min_element.borrow().deref() {
+            None => Ordering::Greater,
+            Some(e) => element.cmp(e),
+        },
     )
 }
 
 fn set_current_min_element(element: Option<&Element>) {
-    CURRENT_MIN_ELEMENT.with(|current_min_element| {
-        match element {
-            None => {}
-            Some(e) => {
-                current_min_element.borrow_mut().replace(e.clone());
-            }
+    CURRENT_MIN_ELEMENT.with(|current_min_element| match element {
+        None => {}
+        Some(e) => {
+            current_min_element.borrow_mut().replace(e.clone());
         }
     });
 }
@@ -158,14 +196,24 @@ impl AddElementCommand {
 impl Command for AddElementCommand {
     fn execute(&self) -> Result<(), Error> {
         ELEMENT_ORDERING_BUFFER.with(|element_ordering_buffer| {
-            let mut element_guard = self.element.lock().unwrap();
-            assert_order(element_guard.as_ref().unwrap());
-            element_ordering_buffer.borrow_mut().push_back(element_guard.take().unwrap());
+            let mut element_guard = self
+                .element
+                .lock()
+                .map_err(|e| anyhow!("Failed to lock element: {}", e))?;
+            let element = element_guard
+                .as_ref()
+                .ok_or_else(|| anyhow!("Element already taken"))?;
+            assert_order(element)?;
+            element_ordering_buffer.borrow_mut().push_back(
+                element_guard
+                    .take()
+                    .ok_or_else(|| anyhow!("Element already taken"))?,
+            );
             if element_ordering_buffer.borrow().len() > element_ordering_buffer_size() {
-                flush_sorted_top()
+                flush_sorted_top()?;
             }
-        });
-        Ok(())
+            Ok(())
+        })
     }
 }
 
@@ -184,16 +232,22 @@ impl AddElementsCommand {
 impl Command for AddElementsCommand {
     fn execute(&self) -> Result<(), Error> {
         ELEMENT_ORDERING_BUFFER.with(|element_ordering_buffer| {
-            let mut elements_guard = self.elements.lock().unwrap();
-            for element in elements_guard.take().unwrap() {
-                assert_order(&element);
+            let mut elements_guard = self
+                .elements
+                .lock()
+                .map_err(|e| anyhow!("Failed to lock elements: {}", e))?;
+            for element in elements_guard
+                .take()
+                .ok_or_else(|| anyhow!("Elements already taken"))?
+            {
+                assert_order(&element)?;
                 element_ordering_buffer.borrow_mut().push_back(element);
             }
             if element_ordering_buffer.borrow().len() > element_ordering_buffer_size() {
-                flush_sorted_top();
+                flush_sorted_top()?;
             }
-        });
-        Ok(())
+            Ok(())
+        })
     }
 }
 
@@ -204,30 +258,33 @@ struct EncodeFileBlockCommand {
 
 impl EncodeFileBlockCommand {
     fn new(index: usize, elements: Mutex<Vec<Element>>) -> EncodeFileBlockCommand {
-        EncodeFileBlockCommand {
-            index,
-            elements,
-        }
+        EncodeFileBlockCommand { index, elements }
     }
 }
 
 impl Command for EncodeFileBlockCommand {
     fn execute(&self) -> Result<(), Error> {
-        let mut elements_guard = self.elements.lock().unwrap();
+        let mut elements_guard = self
+            .elements
+            .lock()
+            .map_err(|e| anyhow!("Failed to lock elements: {}", e))?;
         let file_block = FileBlock::from_elements(self.index, std::mem::take(&mut elements_guard));
-        let (blob_header, blob_body) = FileBlock::serialize(&file_block, compression_type())?;
+        let (blob_header, blob_body) =
+            FileBlock::serialize(&file_block, compression_type(), 4, 1024 * 1024)?;
         NEXT_THREAD_POOL.with(|thread_pool| {
             let thread_pool = thread_pool.borrow();
-            let thread_pool_guard = thread_pool.as_ref().unwrap().read().unwrap();
-            thread_pool_guard.submit(
-                Box::new(
-                    WriteBlobCommand::new(
-                        self.index, Mutex::new(blob_header), Mutex::new(blob_body),
-                    )
-                )
-            );
-        });
-        Ok(())
+            let thread_pool_guard = thread_pool
+                .as_ref()
+                .ok_or_else(|| anyhow!("Thread pool not initialized"))?
+                .read()
+                .map_err(|e| anyhow!("Failed to lock thread pool: {}", e))?;
+            thread_pool_guard.submit(Box::new(WriteBlobCommand::new(
+                self.index,
+                Mutex::new(blob_header),
+                Mutex::new(blob_body),
+            )));
+            Ok(())
+        })
     }
 }
 
@@ -238,7 +295,11 @@ struct WriteBlobCommand {
 }
 
 impl WriteBlobCommand {
-    fn new(index: usize, blob_header: Mutex<Vec<u8>>, blob_body: Mutex<Vec<u8>>) -> WriteBlobCommand {
+    fn new(
+        index: usize,
+        blob_header: Mutex<Vec<u8>>,
+        blob_body: Mutex<Vec<u8>>,
+    ) -> WriteBlobCommand {
         WriteBlobCommand {
             index,
             blob_header,
@@ -249,40 +310,47 @@ impl WriteBlobCommand {
 
 impl Command for WriteBlobCommand {
     fn execute(&self) -> Result<(), Error> {
-        BLOB_ORDERING_BUFFER.with(
-            |buffer| {
-                let mut blob_header_guard = self.blob_header.lock().unwrap();
-                let blob_header = std::mem::take(blob_header_guard.deref_mut());
-                let mut blob_body_guard = self.blob_body.lock().unwrap();
-                let blob_body = std::mem::take(blob_body_guard.deref_mut());
-                buffer
-                    .borrow_mut()
-                    .insert(self.index, (blob_header, blob_body));
-            }
-        );
+        BLOB_ORDERING_BUFFER.with(|buffer| {
+            let mut blob_header_guard = self
+                .blob_header
+                .lock()
+                .map_err(|e| anyhow!("Failed to lock blob header: {}", e))?;
+            let blob_header = std::mem::take(blob_header_guard.deref_mut());
+            let mut blob_body_guard = self
+                .blob_body
+                .lock()
+                .map_err(|e| anyhow!("Failed to lock blob body: {}", e))?;
+            let blob_body = std::mem::take(blob_body_guard.deref_mut());
+            buffer
+                .borrow_mut()
+                .insert(self.index, (blob_header, blob_body));
+            Ok::<(), Error>(())
+        })?;
 
-        BLOB_ORDERING_BUFFER.with(
-            |buffer| {
-                NEXT_TO_WRITE.with(|next| {
-                    let next_to_write = *next.borrow();
-                    for i in next_to_write..usize::MAX {
-                        match buffer.borrow_mut().remove(&i) {
-                            None => {
-                                *next.borrow_mut() = i;
-                                break;
-                            }
-                            Some((header, body)) => {
-                                PBF_WRITER.with(
-                                    |writer| {
-                                        writer.borrow_mut().as_mut().unwrap().write_blob(header, body).expect("Failed to write a blob");
-                                    }
-                                );
-                            }
+        BLOB_ORDERING_BUFFER.with(|buffer| {
+            NEXT_TO_WRITE.with(|next| {
+                let next_to_write = *next.borrow();
+                for i in next_to_write..usize::MAX {
+                    match buffer.borrow_mut().remove(&i) {
+                        None => {
+                            *next.borrow_mut() = i;
+                            break;
+                        }
+                        Some((header, body)) => {
+                            PBF_WRITER.with(|writer| {
+                                writer
+                                    .borrow_mut()
+                                    .as_mut()
+                                    .ok_or_else(|| anyhow!("PBF writer not initialized"))?
+                                    .write_blob(header, body)?;
+                                Ok::<(), Error>(())
+                            })?;
                         }
                     }
-                });
-            }
-        );
+                }
+                Ok::<(), Error>(())
+            })
+        })?;
 
         Ok(())
     }
@@ -290,16 +358,19 @@ impl Command for WriteBlobCommand {
 
 /// Write *.osm.pbf file while performing concurrently significant parts of work.
 ///
+/// Designed for element sources without block structure, such as apidb database dumps.
+/// For PBF-to-PBF conversion, prefer [ParallelBlockWriter] which preserves block structure.
+///
 /// The parallel writer accepts somewhat unordered stream of elements, orders these elements,
-/// splits them into FileBlocks and writes them to the target file. The writer is composed from an
+/// splits them into FileBlocks and writes them to the target file. The writer is composed of an
 /// ordering thread that maintains a large enough buffer to provide high probability of restoring
 /// the order, multiple encoding threads that do the heavy lifting of encoding the PBF and
-/// compressing, and finally the writing thread tht writes encoded blobs to file.
+/// compressing, and finally the writing thread that writes encoded blobs to file.
+///
 /// The [ParallelWriter] uses more memory because of the internal ordering buffers controlled by the
 /// `element_ordering_buffer_size` parameter to constructor. It is limited to use cases where the
 /// processing of each element takes roughly the same time, as in simple filtering tasks or that
 /// elements were ordered before calling the writer.
-/// For example please see ./examples/parallel-bf-io.rs
 pub struct ParallelWriter {
     path: PathBuf,
     file_info: FileInfo,
@@ -322,107 +393,137 @@ impl ParallelWriter {
         let encoding_pool = Self::create_thread_pool("encoding", 4, 256)?;
         let writing_pool = Self::create_thread_pool("writing", 1, 256)?;
 
-        Self::set_thread_local(element_ordering_pool.clone(), &ELEMENT_ORDERING_BUFFER_SIZE, element_ordering_buffer_size);
-        Self::set_thread_local(element_ordering_pool.clone(), &FILE_BLOCK_SIZE, file_block_size);
-        Self::set_thread_local(encoding_pool.clone(), &COMPRESSION_TYPE, Some(compression_type.clone()));
-        Self::set_thread_local(element_ordering_pool.clone(), &NEXT_THREAD_POOL, Some(encoding_pool.clone()));
-        Self::set_thread_local(encoding_pool.clone(), &NEXT_THREAD_POOL, Some(writing_pool.clone()));
+        Self::set_thread_local(
+            element_ordering_pool.clone(),
+            &ELEMENT_ORDERING_BUFFER_SIZE,
+            element_ordering_buffer_size,
+        );
+        Self::set_thread_local(
+            element_ordering_pool.clone(),
+            &FILE_BLOCK_SIZE,
+            file_block_size,
+        );
+        Self::set_thread_local(
+            encoding_pool.clone(),
+            &COMPRESSION_TYPE,
+            Some(compression_type.clone()),
+        );
+        Self::set_thread_local(
+            element_ordering_pool.clone(),
+            &NEXT_THREAD_POOL,
+            Some(encoding_pool.clone()),
+        );
+        Self::set_thread_local(
+            encoding_pool.clone(),
+            &NEXT_THREAD_POOL,
+            Some(writing_pool.clone()),
+        );
 
-        Ok(
-            ParallelWriter {
-                path,
-                file_info,
-                compression_type,
-                element_ordering_pool,
-                encoding_pool,
-                writing_pool,
-            }
-        )
+        Ok(ParallelWriter {
+            path,
+            file_info,
+            compression_type,
+            element_ordering_pool,
+            encoding_pool,
+            writing_pool,
+        })
     }
 
     /// Write the *.osm.pbf header.
     ///
     /// Must be called before writing the first element.
-    pub fn write_header(&mut self) -> Result<(), Error> {
-        let writing_pool_guard = self.writing_pool.read()
-            .map_err(|e| anyhow!("{}", e))?;
+    pub fn write_header(&self) -> Result<(), Error> {
+        let writing_pool_guard = self.writing_pool.read().map_err(|e| anyhow!("{}", e))?;
         let path = self.path.clone();
         let file_info = self.file_info.clone();
         let compression_type = self.compression_type.clone();
-        writing_pool_guard.in_all_threads(
-            Arc::new(move || {
-                PBF_WRITER.with(|writer| {
-                    if writer.borrow().is_none() {
-                        let mut w = Writer::from_file_info(
-                            path.clone(),
-                            file_info.clone(),
-                            compression_type.clone(),
-                        ).unwrap();
-                        w.write_header().unwrap();
-                        writer.replace(Some(w));
-                    }
-                })
+        // TODO: add another version of in_all_threads with return value
+        writing_pool_guard.in_all_threads(Arc::new(move || {
+            PBF_WRITER.with(|writer| {
+                if writer.borrow().is_none() {
+                    let mut w = Writer::from_file_info(
+                        path.clone(),
+                        file_info.clone(),
+                        compression_type.clone(),
+                    )
+                    .unwrap();
+                    w.write_header().unwrap();
+                    writer.replace(Some(w));
+                }
             })
-        );
+        }));
         Ok(())
     }
 
     /// Write an [Element]
-    pub fn write_element(&mut self, element: Element) -> Result<(), Error> {
+    pub fn write_element(&self, element: Element) -> Result<(), Error> {
         self.element_ordering_pool
             .read()
-            .unwrap()
+            .map_err(|e| anyhow!("Failed to lock element ordering pool: {}", e))?
             .submit(Box::new(AddElementCommand::new(element)));
         Ok(())
     }
 
     /// Write list of [Element]s
-    pub fn write_elements(&mut self, elements: Vec<Element>) -> Result<(), Error> {
+    pub fn write_elements(&self, elements: Vec<Element>) -> Result<(), Error> {
         self.element_ordering_pool
             .read()
-            .unwrap()
+            .map_err(|e| anyhow!("Failed to lock element ordering pool: {}", e))?
             .submit(Box::new(AddElementsCommand::new(elements)));
         Ok(())
     }
 
     /// Flush internal buffers.
     pub fn close(&mut self) -> Result<(), Error> {
-        self.flush_element_ordering();
+        self.flush_element_ordering()?;
         Self::shutdown(self.element_ordering_pool.clone())?;
         Self::shutdown(self.encoding_pool.clone())?;
-        self.flush_writing();
+        self.flush_writing()?;
         Self::shutdown(self.writing_pool.clone())?;
         Ok(())
     }
 
-    fn flush_element_ordering(&self) {
-        let element_ordering_pool_guard = self.element_ordering_pool.read().unwrap();
-        element_ordering_pool_guard.in_all_threads(Arc::new(flush_all_sorted))
-    }
-
-    fn flush_writing(&self) {}
-
-    fn create_thread_pool(name: &str, tasks: usize, queue_size: usize) -> Result<Arc<RwLock<ThreadPool>>, Error> {
-        Ok(
-            Arc::new(
-                RwLock::new(
-                    ThreadPoolBuilder::new()
-                        .with_name_str(name)
-                        .with_tasks(tasks)
-                        .with_queue_size(queue_size)
-                        .with_shutdown_mode(ShutdownMode::CompletePending)
-                        .build()?
-                )
-            )
-        )
-    }
-
-    fn set_thread_local<T>(thread_pool: Arc<RwLock<ThreadPool>>, local_key: &'static LocalKey<RefCell<T>>, val: T)
-        where T: Sync + Send + Clone {
-        thread_pool
+    fn flush_element_ordering(&self) -> Result<(), Error> {
+        let element_ordering_pool_guard = self
+            .element_ordering_pool
             .read()
-            .unwrap()
-            .set_thread_local(local_key, val);
+            .map_err(|e| anyhow!("Failed to lock element ordering pool: {}", e))?;
+        element_ordering_pool_guard.in_all_threads(Arc::new(flush_all_sorted));
+        Ok(())
+    }
+
+    fn flush_writing(&self) -> Result<(), Error> {
+        let writing_pool_guard = self
+            .writing_pool
+            .read()
+            .map_err(|e| anyhow!("Failed to lock writing pool: {}", e))?;
+        writing_pool_guard.in_all_threads(Arc::new(flush_all_blobs));
+        Ok(())
+    }
+
+    fn create_thread_pool(
+        name: &str,
+        tasks: usize,
+        queue_size: usize,
+    ) -> Result<Arc<RwLock<ThreadPool>>, Error> {
+        Ok(Arc::new(RwLock::new(
+            ThreadPoolBuilder::new()
+                .with_name_str(name)
+                .with_tasks(tasks)
+                .with_queue_size(queue_size)
+                .with_shutdown_mode(ShutdownMode::CompletePending)
+                .build()?,
+        )))
+    }
+
+    fn set_thread_local<T>(
+        thread_pool: Arc<RwLock<ThreadPool>>,
+        local_key: &'static LocalKey<RefCell<T>>,
+        val: T,
+    ) where
+        T: Sync + Send + Clone,
+    {
+        thread_pool.read().unwrap().set_thread_local(local_key, val);
     }
 
     fn shutdown(thread_pool: Arc<RwLock<ThreadPool>>) -> Result<(), Error> {

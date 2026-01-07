@@ -110,6 +110,8 @@ pub fn main() -> Result<(), anyhow::Error> {
 }
 ```
 
+For parallel processing examples, see `examples/parallel-blocks-pbf-to-pbf.rs`.
+
 ## Similar Software
 * [libosmium](https://osmcode.org/libosmium/) - very fast and very mature with a Python wrapper.
 * [osmosis](https://wiki.openstreetmap.org/wiki/Osmosis) - reference implementation for most if

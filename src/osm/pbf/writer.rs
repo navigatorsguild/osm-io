@@ -16,7 +16,7 @@ use crate::osm::pbf::osm_header::OsmHeader;
 
 /// *.osm.pbf file reader
 ///
-/// Write an ordered *.osm.pbf file split into blocks of 8000 or less elements of the same variant -
+/// Write an ordered *.osm.pbf file split into blocks of 8000 or fewer elements of the same variant -
 /// Nodes, Ways, Relations.
 /// Example:
 /// ```
@@ -72,17 +72,15 @@ impl Writer {
         file_info: FileInfo,
         compression_type: CompressionType,
     ) -> Result<Writer, anyhow::Error> {
-        let file = File::create(path.clone())
-            .with_context(|| anyhow!("path: {}", path.display()))?;
-        Ok(
-            Writer {
-                path: path.clone(),
-                file_info,
-                compression_type,
-                file,
-                element_accumulator: ElementAccumulator::new(),
-            }
-        )
+        let file =
+            File::create(path.clone()).with_context(|| anyhow!("path: {}", path.display()))?;
+        Ok(Writer {
+            path: path.clone(),
+            file_info,
+            compression_type,
+            file,
+            element_accumulator: ElementAccumulator::new(),
+        })
     }
 
     /// Create a new [Writer]
@@ -98,18 +96,13 @@ impl Writer {
         precomputed_bounding_box: Option<BoundingBox>,
         contains_history: bool,
     ) -> Result<Writer, anyhow::Error> {
-        let mut required_features = vec![
-            "OsmSchema-V0.6".to_string(),
-            "DenseNodes".to_string(),
-        ];
+        let mut required_features = vec!["OsmSchema-V0.6".to_string(), "DenseNodes".to_string()];
 
         if contains_history {
             required_features.push("HistoricalInformation".to_string());
         }
 
-        let optional_features = vec![
-            "Sort.Type_then_ID".to_string(),
-        ];
+        let optional_features = vec!["Sort.Type_then_ID".to_string()];
 
         let writingprogram = Some(program_name.to_string());
         let source = Some(data_source.to_string());
@@ -131,24 +124,27 @@ impl Writer {
     /// Write the *.osm.pbf file header.
     ///
     /// Must be called before writing elements. That means that all header values, specifically the
-    /// bounding box must be calculated before writing the file. I some cases that can incur a
+    /// bounding box must be calculated before writing the file. In some cases that can incur a
     /// costly additional iteration.
     pub fn write_header(&mut self) -> Result<(), anyhow::Error> {
-        let file_block = FileBlock::from_header(
-            OsmHeader::from_file_info(self.file_info.clone())
-        );
+        let file_block = FileBlock::from_header(OsmHeader::from_file_info(self.file_info.clone()));
 
         self.write_file_block(file_block)
     }
 
     /// Low level API to write a [FileBlock]
     pub fn write_file_block(&mut self, file_block: FileBlock) -> Result<(), anyhow::Error> {
-        let (blob_header, blob_body) = FileBlock::serialize(&file_block, self.compression_type.clone())?;
+        let (blob_header, blob_body) =
+            FileBlock::serialize(&file_block, self.compression_type.clone(), 4, 1024 * 1024)?;
         self.write_blob(blob_header, blob_body)
     }
 
     /// Low level API to write a bytes of a blob
-    pub fn write_blob(&mut self, blob_header: Vec<u8>, blob_body: Vec<u8>) -> Result<(), anyhow::Error> {
+    pub fn write_blob(
+        &mut self,
+        blob_header: Vec<u8>,
+        blob_body: Vec<u8>,
+    ) -> Result<(), anyhow::Error> {
         let blob_header_len: i32 = blob_header.len() as i32;
         self.file.write_all(&blob_header_len.to_be_bytes())?;
         self.file.write_all(&blob_header)?;
@@ -159,7 +155,7 @@ impl Writer {
 
     /// Write element
     ///
-    /// Elements must be ordered, that is each element must be less then or equal to the following
+    /// Elements must be ordered, that is each element must be less than or equal to the following
     /// element
     pub fn write_element(&mut self, element: Element) -> Result<(), anyhow::Error> {
         let elements = self.element_accumulator.add(element);
@@ -173,15 +169,12 @@ impl Writer {
     }
     /// Write elements
     ///
-    /// Elements must be ordered, that is each element must be less then or equal to the following
+    /// Elements must be ordered, that is each element must be less than or equal to the following
     /// element
     pub fn write_elements(&mut self, elements: Vec<Element>) -> Result<(), anyhow::Error> {
         let index = self.element_accumulator.index();
         let data = FileBlock::Data {
-            metadata: FileBlockMetadata::new(
-                "OSMData".to_string(),
-                index,
-            ),
+            metadata: FileBlockMetadata::new("OSMData".to_string(), index),
             data: OsmData::from_elements(elements, None),
         };
         self.write_file_block(data)?;

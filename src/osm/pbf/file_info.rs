@@ -61,7 +61,7 @@ impl FileInfo {
 
     /// Set the bounding box for the data in this file
     pub fn with_bounding_box(&mut self, bounding_box: &Option<BoundingBox>) {
-        self.bounding_box = bounding_box.clone();
+        self.bounding_box = *bounding_box;
     }
 
     /// Get required features for this file

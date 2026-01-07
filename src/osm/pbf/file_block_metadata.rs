@@ -28,7 +28,7 @@ impl FileBlockMetadata {
 
     #[allow(dead_code)]
     pub(crate) fn bounding_box(&self) -> Option<BoundingBox> {
-        self.bounding_box.clone()
+        self.bounding_box
     }
 
     #[allow(dead_code)]
