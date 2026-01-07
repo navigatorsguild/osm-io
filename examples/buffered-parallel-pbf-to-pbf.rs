@@ -7,7 +7,7 @@ use osm_io::osm::pbf::compression_type::CompressionType;
 use osm_io::osm::pbf::thread_local_accumulator::ThreadLocalAccumulator;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 #[derive(Parser)]
 #[command(name = "parallel-pbf-to-pbf")]
@@ -40,7 +40,7 @@ pub fn main() -> Result<(), anyhow::Error> {
     let reader = pbf::reader::Reader::new(input_path)?;
     let mut file_info = reader.info().clone();
     file_info.with_writingprogram_str("parallel-pbf-to-pbf");
-    let parallel_writer = Arc::new(Mutex::new(
+    let parallel_writer = Arc::new(RwLock::new(
         pbf::parallel_writer::ParallelWriter::from_file_info(
             8000 * 128,
             8000,
@@ -54,8 +54,8 @@ pub fn main() -> Result<(), anyhow::Error> {
     let tl_acc = ThreadLocalAccumulator::new(8000);
 
     {
-        let mut parallel_writer_guard = parallel_writer
-            .lock()
+        let parallel_writer_guard = parallel_writer
+            .read()
             .map_err(|e| anyhow::anyhow!("Failed to lock parallel writer: {}", e))?;
         parallel_writer_guard.write_header()?;
     }
@@ -68,8 +68,8 @@ pub fn main() -> Result<(), anyhow::Error> {
             Element::Relation { .. } => {}
             Element::Sentinel => {
                 filter_out = true;
-                let mut parallel_writer_guard = parallel_writer
-                    .lock()
+                let parallel_writer_guard = parallel_writer
+                    .read()
                     .map_err(|e| anyhow::anyhow!("Failed to lock parallel writer: {}", e))?;
                 parallel_writer_guard.write_elements(tl_acc.elements())?;
             }
@@ -81,7 +81,7 @@ pub fn main() -> Result<(), anyhow::Error> {
     })?;
 
     let mut parallel_writer_guard = parallel_writer_clone
-        .lock()
+        .write()
         .map_err(|e| anyhow::anyhow!("Failed to lock parallel writer: {}", e))?;
     parallel_writer_guard.close()?;
 

@@ -385,13 +385,21 @@ fn consolidate_blocks() -> Option<(usize, Vec<Element>)> {
     })
 }
 
-/// Write *.osm.pbf file while performing concurrently significant parts of work using pre-ordered blocks.
+/// Write *.osm.pbf file with parallel encoding using sorted blocks.
 ///
-/// The parallel block writer accepts pre-ordered blocks of elements from the parallel reader,
-/// consolidates them into properly sized output blocks, and writes them to the target file.
-/// The writer is composed of an ordering thread, multiple encoding threads for encoding and
-/// compression, and a writing thread for sequential file writes.
-/// For example please see ./examples/parallel-pbf-to-pbf.rs
+/// Designed for PBF-to-PBF conversion where block structure is preserved.
+/// For sources without blocks (e.g., apidb dumps), use [ParallelWriter] instead.
+///
+/// Blocks must be submitted via [write_ordered_block] with their original index.
+/// Elements within each block must be sorted and of homogeneous type.
+/// Out-of-order block submission is allowed; blocks are reordered internally before writing.
+///
+/// Pipeline: ordering (1 thread) → encoding (N threads) → writing (1 thread)
+///
+/// Performance is configurable via [ParallelBlockWriterBuilder]: encoding threads,
+/// compression type, and compression level.
+///
+/// See examples/parallel-blocks-pbf-to-pbf.rs
 pub struct ParallelBlockWriter {
     path: PathBuf,
     file_info: FileInfo,
@@ -534,7 +542,7 @@ impl ParallelBlockWriter {
     /// Write the *.osm.pbf header.
     ///
     /// Must be called before writing the first block.
-    pub fn write_header(&mut self) -> Result<(), Error> {
+    pub fn write_header(&self) -> Result<(), Error> {
         let block_writing_pool_guard = self
             .block_writing_pool
             .read()
@@ -562,7 +570,7 @@ impl ParallelBlockWriter {
 
     /// Write an ordered block of elements with block index
     pub fn write_ordered_block(
-        &mut self,
+        &self,
         block_index: usize,
         elements: Vec<Element>,
     ) -> Result<(), Error> {

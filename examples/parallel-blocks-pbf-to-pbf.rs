@@ -8,7 +8,7 @@ use osm_io::osm::pbf::file_info::FileInfo;
 use osm_io::osm::pbf::parallel_block_writer::ParallelBlockWriter;
 use simple_logger::SimpleLogger;
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 #[derive(Parser)]
 #[command(name = "parallel-pbf-to-pbf")]
@@ -41,7 +41,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     let mut file_info = FileInfo::default();
     file_info.with_writingprogram_str("parallel-pbf-to-pbf");
-    let mut writer = ParallelBlockWriter::new(
+    let writer = ParallelBlockWriter::new(
         output_path,
         file_info,
         CompressionType::Zlib,
@@ -51,12 +51,12 @@ fn main() -> Result<(), anyhow::Error> {
     )?;
     writer.write_header()?;
 
-    let writer = Arc::new(Mutex::new(writer));
+    let writer = Arc::new(RwLock::new(writer));
 
     {
         let writer_clone = writer.clone();
         reader.parallel_for_each_ordered_block(4, move |block_index, elements| {
-            let mut w = match writer_clone.lock() {
+            let w = match writer_clone.read() {
                 Ok(x) => x,
                 Err(_) => return Err(anyhow!("Writer lock poisoned")),
             };
@@ -66,8 +66,8 @@ fn main() -> Result<(), anyhow::Error> {
     }
 
     match Arc::try_unwrap(writer) {
-        Ok(mutex) => {
-            let mut w = mutex.into_inner()?;
+        Ok(rwlock) => {
+            let mut w = rwlock.into_inner()?;
             w.close()?;
         }
         Err(_) => {

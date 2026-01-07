@@ -42,7 +42,7 @@ fn test_pbf_rw_parallel_pipe() -> Result<(), anyhow::Error> {
     let tl_acc = ThreadLocalAccumulator::new(8000);
 
     {
-        let mut parallel_writer_guard = parallel_writer.lock().unwrap();
+        let parallel_writer_guard = parallel_writer.lock().unwrap();
         parallel_writer_guard.write_header()?;
     }
 
@@ -50,7 +50,7 @@ fn test_pbf_rw_parallel_pipe() -> Result<(), anyhow::Error> {
         if !element.is_sentinel() {
             tl_acc.add(element);
         } else {
-            let mut parallel_writer_guard = parallel_writer.lock().unwrap();
+            let parallel_writer_guard = parallel_writer.lock().unwrap();
             parallel_writer_guard.write_elements(tl_acc.elements())?;
         }
         Ok(())

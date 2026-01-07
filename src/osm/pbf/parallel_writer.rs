@@ -358,16 +358,19 @@ impl Command for WriteBlobCommand {
 
 /// Write *.osm.pbf file while performing concurrently significant parts of work.
 ///
+/// Designed for element sources without block structure, such as apidb database dumps.
+/// For PBF-to-PBF conversion, prefer [ParallelBlockWriter] which preserves block structure.
+///
 /// The parallel writer accepts somewhat unordered stream of elements, orders these elements,
 /// splits them into FileBlocks and writes them to the target file. The writer is composed of an
 /// ordering thread that maintains a large enough buffer to provide high probability of restoring
 /// the order, multiple encoding threads that do the heavy lifting of encoding the PBF and
-/// compressing, and finally the writing thread tht writes encoded blobs to file.
+/// compressing, and finally the writing thread that writes encoded blobs to file.
+///
 /// The [ParallelWriter] uses more memory because of the internal ordering buffers controlled by the
 /// `element_ordering_buffer_size` parameter to constructor. It is limited to use cases where the
 /// processing of each element takes roughly the same time, as in simple filtering tasks or that
 /// elements were ordered before calling the writer.
-/// For example please see ./examples/parallel-pbf-io.rs
 pub struct ParallelWriter {
     path: PathBuf,
     file_info: FileInfo,
@@ -429,7 +432,7 @@ impl ParallelWriter {
     /// Write the *.osm.pbf header.
     ///
     /// Must be called before writing the first element.
-    pub fn write_header(&mut self) -> Result<(), Error> {
+    pub fn write_header(&self) -> Result<(), Error> {
         let writing_pool_guard = self.writing_pool.read().map_err(|e| anyhow!("{}", e))?;
         let path = self.path.clone();
         let file_info = self.file_info.clone();
@@ -453,7 +456,7 @@ impl ParallelWriter {
     }
 
     /// Write an [Element]
-    pub fn write_element(&mut self, element: Element) -> Result<(), Error> {
+    pub fn write_element(&self, element: Element) -> Result<(), Error> {
         self.element_ordering_pool
             .read()
             .map_err(|e| anyhow!("Failed to lock element ordering pool: {}", e))?
@@ -462,7 +465,7 @@ impl ParallelWriter {
     }
 
     /// Write list of [Element]s
-    pub fn write_elements(&mut self, elements: Vec<Element>) -> Result<(), Error> {
+    pub fn write_elements(&self, elements: Vec<Element>) -> Result<(), Error> {
         self.element_ordering_pool
             .read()
             .map_err(|e| anyhow!("Failed to lock element ordering pool: {}", e))?
