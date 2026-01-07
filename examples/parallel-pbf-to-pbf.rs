@@ -49,8 +49,6 @@ pub fn main() -> Result<(), anyhow::Error> {
         )?,
     ));
 
-    // TODO: document to filter out sentinel
-    // TODO: abort with clear failure when header is not written
     {
         let parallel_writer_guard = parallel_writer
             .read()

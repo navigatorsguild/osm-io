@@ -37,7 +37,7 @@ fn main() -> Result<(), anyhow::Error> {
     let input_path = &args.input;
     let output_path = args.output;
 
-    let reader = pbf::reader::Reader::new(&input_path)?;
+    let reader = pbf::reader::Reader::new(input_path)?;
 
     let mut file_info = FileInfo::default();
     file_info.with_writingprogram_str("parallel-pbf-to-pbf");
