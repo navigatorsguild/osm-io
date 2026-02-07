@@ -158,11 +158,23 @@ impl OsmData {
                 let mut version = 0_i32;
                 let mut user: String = String::default();
                 if let Some(info) = &dense.denseinfo {
-                    last_timestamp += info.timestamp[i];
+                    if let Some(time) = info.timestamp.get(i) {
+                        last_timestamp += time;
+                    }
+
                     timestamp = last_timestamp * date_granularity as i64;
-                    last_changeset += info.changeset[i];
-                    uid += info.uid[i];
-                    last_user_sid += info.user_sid[i];
+                    if let Some(changeset) = info.changeset.get(i) {
+                        last_changeset += changeset;
+                    }
+
+                    if let Some(t_uid) = info.uid.get(i) {
+                        uid += t_uid;
+                    }
+
+                    if let Some(user_sid) = info.user_sid.get(i) {
+                        last_user_sid += user_sid;
+                    }
+
                     let user_sid = last_user_sid as usize;
                     if info.visible.len() > i {
                         visible = info.visible[i];
